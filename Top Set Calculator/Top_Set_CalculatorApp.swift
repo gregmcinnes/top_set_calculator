@@ -1,17 +1,24 @@
-//
-//  Top_Set_CalculatorApp.swift
-//  Top Set Calculator
-//
-//  Created by Greg McInnes on 12/28/25.
-//
-
 import SwiftUI
 
 @main
 struct Top_Set_CalculatorApp: App {
+    @State private var settings = AppSettings()
+    @State private var showOnboarding = false
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            CalculatorsView(settings: settings)
+                .sbsBackground()
+                .preferredColorScheme(settings.appearanceMode.colorScheme)
+                .onAppear {
+                    // Show onboarding on first launch
+                    if !settings.hasSeenOnboarding {
+                        showOnboarding = true
+                    }
+                }
+                .fullScreenCover(isPresented: $showOnboarding) {
+                    OnboardingView(settings: settings)
+                }
         }
     }
 }
