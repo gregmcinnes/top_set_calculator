@@ -271,14 +271,16 @@ private struct FeaturesPage: View {
                     icon: "paintpalette.fill",
                     title: "Custom Plate Colors",
                     description: "Personalize the barbell visualization to match your gym's plates.",
-                    color: .pink
+                    color: .pink,
+                    isPremium: true
                 )
                 
                 FeatureCard(
                     icon: "tray.full.fill",
                     title: "My Plates",
                     description: "Tell the calculator which plates you own for accurate load-outs.",
-                    color: .orange
+                    color: .orange,
+                    isPremium: true
                 )
             }
             .padding(.horizontal, SBSLayout.paddingMedium)
@@ -292,6 +294,11 @@ private struct FeaturesPage: View {
             .foregroundStyle(SBSColors.textTertiaryFallback)
             .padding(.top, SBSLayout.paddingSmall)
             
+            Text("PRO features, including warm-ups and My Lifts, are part of a one-time Premium unlock.")
+                .font(SBSFonts.caption())
+                .foregroundStyle(SBSColors.textTertiaryFallback)
+                .multilineTextAlignment(.center)
+            
             Spacer()
             Spacer()
         }
@@ -304,6 +311,7 @@ private struct FeatureCard: View {
     let title: String
     let description: String
     let color: Color
+    var isPremium = false
     
     var body: some View {
         HStack(spacing: SBSLayout.paddingMedium) {
@@ -318,9 +326,15 @@ private struct FeatureCard: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                HStack(spacing: 6) {
+                    Text(title)
+                        .font(SBSFonts.bodyBold())
+                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                    
+                    if isPremium {
+                        PremiumBadge()
+                    }
+                }
                 
                 Text(description)
                     .font(SBSFonts.caption())

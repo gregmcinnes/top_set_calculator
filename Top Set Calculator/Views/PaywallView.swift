@@ -10,12 +10,16 @@ struct PaywallView: View {
     let storeManager = StoreManager.shared
     
     @State private var isPurchasing = false
-    @State private var showError = false
-    @State private var errorMessage = ""
+    @State private var showAlert = false
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
     @State private var animateIn = false
     
     /// Optional: The specific feature that triggered this paywall
     var triggeredByFeature: PremiumFeature?
+    
+    /// Sheets opened from anywhere in the app should match the chosen appearance
+    @AppStorage("appearanceMode") private var appearanceRawValue = AppearanceMode.system.rawValue
     
     var body: some View {
         ZStack {
@@ -69,14 +73,27 @@ struct PaywallView: View {
                             .foregroundStyle(SBSColors.textTertiaryFallback)
                             .padding()
                     }
+                    .accessibilityLabel("Close")
                 }
                 Spacer()
             }
         }
-        .alert("Error", isPresented: $showError) {
+        .preferredColorScheme(AppearanceMode(rawValue: appearanceRawValue)?.colorScheme)
+        .alert(alertTitle, isPresented: $showAlert) {
             Button("OK") { }
         } message: {
-            Text(errorMessage)
+            Text(alertMessage)
+        }
+        .task {
+            // Launch may have happened offline, so try again for a real price
+            if storeManager.premiumProduct == nil {
+                await storeManager.loadProducts()
+            }
+        }
+        .onChange(of: storeManager.isPremium) { _, isPremium in
+            if isPremium {
+                dismiss()
+            }
         }
         .onAppear {
             withAnimation(.easeOut(duration: 0.5)) {
@@ -233,6 +250,7 @@ struct PaywallView: View {
                 .font(SBSFonts.caption())
                 .foregroundStyle(SBSColors.accentFallback)
         }
+        .disabled(isPurchasing)
         .padding(.top, SBSLayout.paddingSmall)
     }
     
@@ -240,31 +258,51 @@ struct PaywallView: View {
     
     private func purchasePremium() async {
         isPurchasing = true
+        defer { isPurchasing = false }
         
         do {
-            let transaction = try await storeManager.purchasePremium()
-            isPurchasing = false
-            
-            if transaction != nil {
-                // Purchase successful - dismiss
+            switch try await storeManager.purchasePremium() {
+            case .purchased:
                 dismiss()
+            case .pending:
+                presentAlert(
+                    title: "Purchase Pending",
+                    message: "Your purchase is waiting for approval. Premium will unlock automatically once it's approved."
+                )
+            case .cancelled:
+                break
             }
-            // If nil, user cancelled - stay on paywall
         } catch {
-            isPurchasing = false
-            errorMessage = error.localizedDescription
-            showError = true
+            presentAlert(title: "Purchase Failed", message: error.localizedDescription)
         }
     }
     
     private func restorePurchases() async {
         isPurchasing = true
-        await storeManager.restorePurchases()
-        isPurchasing = false
+        defer { isPurchasing = false }
         
-        if storeManager.isPremium {
-            dismiss()
+        do {
+            try await storeManager.restorePurchases()
+            
+            if storeManager.isPremium {
+                dismiss()
+            } else {
+                presentAlert(
+                    title: "No Purchases Found",
+                    message: "We couldn't find a previous Premium purchase for this Apple Account."
+                )
+            }
+        } catch StoreKitError.userCancelled {
+            // The user backed out of signing in
+        } catch {
+            presentAlert(title: "Restore Failed", message: error.localizedDescription)
         }
+    }
+    
+    private func presentAlert(title: String, message: String) {
+        alertTitle = title
+        alertMessage = message
+        showAlert = true
     }
 }
 
@@ -295,7 +333,7 @@ private struct PremiumFeatureRow: View {
                 Text(feature.featureDescription)
                     .font(SBSFonts.caption())
                     .foregroundStyle(SBSColors.textSecondaryFallback)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
             Spacer()
@@ -316,6 +354,6 @@ private struct PremiumFeatureRow: View {
 }
 
 #Preview("Triggered by Feature") {
-    PaywallView(triggeredByFeature: .customPlateColors)
+    PaywallView(triggeredByFeature: .warmups)
 }
 

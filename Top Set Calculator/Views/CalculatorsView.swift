@@ -4,88 +4,42 @@ import SwiftUI
 
 struct CalculatorsView: View {
     var settings: AppSettings
-    @State private var showingPaywall = false
     @State private var showingSettings = false
+    @State private var paywallFeature: PremiumFeature?
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: SBSLayout.sectionSpacing) {
-                    // Calculator cards
                     VStack(spacing: SBSLayout.cardSpacing) {
-                        NavigationLink {
-                            OneRepMaxCalculatorView(useMetric: settings.useMetric)
-                        } label: {
-                            CalculatorCard(
-                                icon: "trophy.fill",
-                                iconColor: .orange,
-                                title: "One-Rep Max",
-                                description: "Estimate your 1RM from submaximal lifts"
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        
-                        NavigationLink {
-                            RPECalculatorView(useMetric: settings.useMetric)
-                        } label: {
-                            CalculatorCard(
-                                icon: "gauge.with.needle.fill",
-                                iconColor: .purple,
-                                title: "RPE Calculator",
-                                description: "Find weights for target RPE levels"
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        
-                        NavigationLink {
-                            StandalonePlateCalculatorView(
-                                useMetric: settings.useMetric,
-                                defaultBarWeight: settings.barWeight,
-                                settings: settings
-                            )
-                        } label: {
-                            CalculatorCard(
-                                icon: "circle.grid.2x1.fill",
-                                iconColor: .blue,
-                                title: "Plate Calculator",
-                                description: "Visualize which plates to load"
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        
-                        NavigationLink {
-                            TrainingMaxCalculatorView(useMetric: settings.useMetric)
-                        } label: {
-                            CalculatorCard(
-                                icon: "percent",
-                                iconColor: .green,
-                                title: "Training Max",
-                                description: "Calculate TM and percentage charts"
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        
-                        NavigationLink {
-                            StrengthScoresView(useMetric: settings.useMetric)
-                        } label: {
-                            CalculatorCard(
-                                icon: "scalemass.fill",
-                                iconColor: .mint,
-                                title: "Strength Scores",
-                                description: "Wilks, DOTS & IPF GL Points"
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        calculatorCard(.oneRepMax, icon: "trophy.fill", color: .orange, title: "One-Rep Max", description: "Estimate your 1RM from submaximal lifts")
+                        calculatorCard(.rpe(), icon: "gauge.with.needle.fill", color: .purple, title: "RPE Calculator", description: "Find weights for target RPE levels")
+                        calculatorCard(.plate(), icon: "circle.grid.2x1.fill", color: .blue, title: "Plate Calculator", description: "Visualize which plates to load")
+                        calculatorCard(.trainingMax(), icon: "percent", color: .green, title: "Training Max", description: "Calculate TM and percentage charts")
+                        calculatorCard(.scores, icon: "scalemass.fill", color: .mint, title: "Strength Scores", description: "Wilks, DOTS & IPF GL Points")
                     }
                     .padding(.horizontal)
                     
-                    Spacer(minLength: 100)
+                    VStack(alignment: .leading, spacing: SBSLayout.cardSpacing) {
+                        Text("Plan & Track")
+                            .font(SBSFonts.title3())
+                            .foregroundStyle(SBSColors.textPrimaryFallback)
+                        
+                        premiumCard(.warmups, route: .warmups(), color: .red)
+                        premiumCard(.myLifts, route: .myLifts, color: .indigo)
+                        premiumCard(.backoffSets, route: .backoff(), color: .teal)
+                        premiumCard(.meetPlanner, route: .meetPlanner, color: .pink)
+                    }
+                    .padding(.horizontal)
+                    
+                    Spacer(minLength: 40)
                 }
                 .padding(.top)
             }
             .sbsBackground()
             .navigationTitle("Top Set Calculator")
             .navigationBarTitleDisplayMode(.large)
+            .calculatorDestinations(settings: settings)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -94,14 +48,36 @@ struct CalculatorsView: View {
                         Image(systemName: "gearshape")
                             .foregroundStyle(SBSColors.textSecondaryFallback)
                     }
+                    .accessibilityLabel("Settings")
                 }
-            }
-            .sheet(isPresented: $showingPaywall) {
-                PaywallView()
             }
             .sheet(isPresented: $showingSettings) {
                 PlateSettingsView(settings: settings)
             }
+            .sheet(item: $paywallFeature) { feature in
+                PaywallView(triggeredByFeature: feature)
+            }
+        }
+    }
+    
+    private func calculatorCard(_ route: CalculatorRoute, icon: String, color: Color, title: String, description: String) -> some View {
+        NavigationLink(value: route) {
+            CalculatorCard(icon: icon, iconColor: color, title: title, description: description)
+        }
+        .buttonStyle(.plain)
+    }
+    
+    @ViewBuilder
+    private func premiumCard(_ feature: PremiumFeature, route: CalculatorRoute, color: Color) -> some View {
+        if StoreManager.shared.canAccess(feature) {
+            calculatorCard(route, icon: feature.iconName, color: color, title: feature.displayName, description: feature.featureDescription)
+        } else {
+            Button {
+                paywallFeature = feature
+            } label: {
+                PremiumCalculatorCard(icon: feature.iconName, iconColor: color, title: feature.displayName, description: feature.featureDescription)
+            }
+            .buttonStyle(.plain)
         }
     }
 }
@@ -186,22 +162,7 @@ struct PremiumCalculatorCard: View {
                         .font(SBSFonts.bodyBold())
                         .foregroundStyle(SBSColors.textPrimaryFallback)
                     
-                    // Premium badge
-                    Text("PRO")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [SBSColors.accentFallback, SBSColors.accentSecondaryFallback],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                        )
+                    PremiumBadge()
                 }
                 
                 Text(description)
@@ -239,53 +200,43 @@ struct PremiumCalculatorCard: View {
 // MARK: - One-Rep Max Calculator
 
 struct OneRepMaxCalculatorView: View {
-    let useMetric: Bool
+    var settings: AppSettings
     
-    @State private var weight: String = ""
-    @State private var reps: String = ""
-    @State private var showResults = false
+    @AppStorage private var weight: String
+    @AppStorage private var reps: String
     @FocusState private var focusedField: Field?
     
     enum Field {
         case weight, reps
     }
     
+    init(settings: AppSettings) {
+        self.settings = settings
+        _weight = AppStorage(wrappedValue: "", "oneRepMax.weight.\(settings.unitLabel)")
+        _reps = AppStorage(wrappedValue: "", "oneRepMax.reps")
+    }
+    
     private var weightValue: Double? {
-        Double(weight)
+        WeightInput.parse(weight)
     }
     
     private var repsValue: Int? {
         Int(reps)
     }
     
-    private var canCalculate: Bool {
-        guard let w = weightValue, let r = repsValue else { return false }
-        return w > 0 && r > 0 && r <= 30
-    }
-    
     // Different formulas for calculating 1RM
-    private var results: [(name: String, value: Double, description: String)] {
-        guard let w = weightValue, let r = repsValue, r > 0 else { return [] }
-        
-        let repsDouble = Double(r)
-        
-        return [
-            ("Epley", w * (1 + repsDouble / 30.0), "Most common formula"),
-            ("Brzycki", w * (36.0 / (37.0 - repsDouble)), "Popular for lower reps"),
-            ("Lombardi", w * pow(repsDouble, 0.10), "Simple power formula"),
-            ("Mayhew", w * (100.0 / (52.2 + 41.9 * exp(-0.055 * repsDouble))), "Research-based"),
-            ("O'Conner", w * (1 + 0.025 * repsDouble), "Conservative estimate"),
-            ("Wathan", w * (100.0 / (48.8 + 53.8 * exp(-0.075 * repsDouble))), "Football-based")
-        ]
+    private var results: [OneRepMax.Estimate] {
+        guard let w = weightValue, let r = repsValue else { return [] }
+        return OneRepMax.estimates(weight: w, reps: r)
     }
     
-    private var averageE1RM: Double? {
-        guard !results.isEmpty else { return nil }
-        return results.map { $0.value }.reduce(0, +) / Double(results.count)
+    private var estimatedMax: Double? {
+        guard let w = weightValue, let r = repsValue else { return nil }
+        return OneRepMax.median(weight: w, reps: r)
     }
     
     private var unit: String {
-        useMetric ? "kg" : "lb"
+        settings.unitLabel
     }
     
     var body: some View {
@@ -294,28 +245,8 @@ struct OneRepMaxCalculatorView: View {
                 // Input section
                 inputSection
                 
-                // Calculate button
-                if canCalculate {
-                    Button {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            showResults = true
-                        }
-                        focusedField = nil
-                        AppSettings.recordCalculationCompleted()
-                    } label: {
-                        Text("Calculate")
-                            .font(SBSFonts.button())
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, SBSLayout.paddingMedium)
-                            .background(SBSColors.accentFallback)
-                            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
-                    }
-                    .padding(.horizontal)
-                }
-                
                 // Results section
-                if showResults && canCalculate {
+                if estimatedMax != nil {
                     resultsSection
                 }
                 
@@ -327,15 +258,11 @@ struct OneRepMaxCalculatorView: View {
             .padding(.top)
         }
         .scrollDismissesKeyboard(.interactively)
+        .keyboardDoneToolbar()
         .sbsBackground()
         .navigationTitle("One-Rep Max")
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: weight) { _, _ in
-            showResults = false
-        }
-        .onChange(of: reps) { _, _ in
-            showResults = false
-        }
+        .recordsCalculation(key: estimatedMax.map { "\($0)" })
     }
     
     private var inputSection: some View {
@@ -360,7 +287,7 @@ struct OneRepMaxCalculatorView: View {
                         .multilineTextAlignment(.center)
                         .focused($focusedField, equals: .weight)
                         .padding()
-                        .background(SBSColors.surfaceFallback)
+                        .background(SBSColors.surfaceElevatedFallback)
                         .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                 }
                 
@@ -380,9 +307,19 @@ struct OneRepMaxCalculatorView: View {
                         .multilineTextAlignment(.center)
                         .focused($focusedField, equals: .reps)
                         .padding()
-                        .background(SBSColors.surfaceFallback)
+                        .background(SBSColors.surfaceElevatedFallback)
                         .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                 }
+            }
+            
+            if let r = repsValue, r > OneRepMax.maximumReps {
+                Text("Estimates only work up to \(OneRepMax.maximumReps) reps")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.warning)
+            } else if let r = repsValue, r > 12 {
+                Text("Estimates get less reliable above 12 reps")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.warning)
             }
         }
         .padding()
@@ -392,18 +329,18 @@ struct OneRepMaxCalculatorView: View {
     
     private var resultsSection: some View {
         VStack(spacing: SBSLayout.paddingMedium) {
-            // Average estimate (highlighted)
-            if let avg = averageE1RM {
+            // Median estimate (highlighted)
+            if let estimate = estimatedMax {
                 VStack(spacing: 8) {
                     Text("Estimated 1RM")
                         .font(SBSFonts.caption())
                         .foregroundStyle(SBSColors.textSecondaryFallback)
                     
-                    Text(formatWeight(avg))
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                    Text(formatWeight(estimate))
+                        .heroNumberFont()
                         .foregroundStyle(SBSColors.accentFallback)
                     
-                    Text("Average of all formulas")
+                    Text("Median of all formulas")
                         .font(SBSFonts.caption())
                         .foregroundStyle(SBSColors.textTertiaryFallback)
                 }
@@ -413,6 +350,19 @@ struct OneRepMaxCalculatorView: View {
                     RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
                         .fill(SBSColors.accentFallback.opacity(0.1))
                 )
+                
+                ResultActions {
+                    ResultLink(title: "Use in RPE", icon: "gauge.with.needle.fill", route: .rpe(e1RM: oneDecimal(estimate)))
+                    ResultLink(title: "Use in Training Max", icon: "percent", route: .trainingMax(max: oneDecimal(estimate)))
+                    if let w = weightValue, let r = repsValue {
+                        SaveSetButton(weight: w, reps: r, useMetric: settings.useMetric)
+                    }
+                    ShareResultButton(
+                        title: "Estimated 1RM",
+                        value: formatWeight(estimate),
+                        detail: "\(weight) \(unit) × \(reps)"
+                    )
+                }
             }
             
             // Individual formula results
@@ -450,9 +400,9 @@ struct OneRepMaxCalculatorView: View {
             .background(SBSColors.surfaceFallback)
             .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
             
-            // Training percentages
-            if let avg = averageE1RM {
-                trainingPercentagesSection(e1rm: avg)
+            if let estimate = estimatedMax {
+                trainingPercentagesSection(e1rm: estimate)
+                repMaxSection(e1rm: estimate)
             }
         }
         .padding(.horizontal)
@@ -471,25 +421,61 @@ struct OneRepMaxCalculatorView: View {
                 GridItem(.flexible())
             ], spacing: SBSLayout.paddingSmall) {
                 ForEach([95, 90, 85, 80, 75, 70, 65, 60], id: \.self) { percentage in
-                    VStack(spacing: 4) {
-                        Text("\(percentage)%")
-                            .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
-                        
-                        Text(formatWeight(e1rm * Double(percentage) / 100.0))
-                            .font(SBSFonts.bodyBold())
-                            .foregroundStyle(SBSColors.textPrimaryFallback)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(SBSColors.surfaceElevatedFallback)
-                    .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                    let target = e1rm * Double(percentage) / 100.0
+                    loadTile(label: "\(percentage)%", weight: target)
                 }
             }
         }
         .padding()
         .background(SBSColors.surfaceFallback)
         .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+    }
+    
+    private func repMaxSection(e1rm: Double) -> some View {
+        VStack(alignment: .leading, spacing: SBSLayout.paddingSmall) {
+            Text("Estimated Rep Maxes")
+                .font(SBSFonts.captionBold())
+                .foregroundStyle(SBSColors.textSecondaryFallback)
+            
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: SBSLayout.paddingSmall) {
+                ForEach([2, 3, 4, 5, 6, 8, 10, 12], id: \.self) { reps in
+                    loadTile(label: "\(reps)RM", weight: RPETable.weight(e1RM: e1rm, reps: reps, rpe: 10))
+                }
+            }
+        }
+        .padding()
+        .background(SBSColors.surfaceFallback)
+        .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+    }
+    
+    /// A rounded weight that opens in the Plate Calculator when tapped
+    private func loadTile(label: String, weight: Double) -> some View {
+        NavigationLink(value: CalculatorRoute.plate(weight: settings.rounded(weight))) {
+            VStack(spacing: 4) {
+                Text(label)
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                
+                Text(settings.loadString(weight))
+                    .font(SBSFonts.bodyBold())
+                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(SBSColors.surfaceElevatedFallback)
+            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private func oneDecimal(_ weight: Double) -> Double {
+        (weight * 10).rounded() / 10
     }
     
     private var infoSection: some View {
@@ -502,7 +488,7 @@ struct OneRepMaxCalculatorView: View {
                     .foregroundStyle(SBSColors.textSecondaryFallback)
             }
             
-            Text("Enter a weight and the number of reps you completed. The calculator uses multiple formulas to estimate your one-rep max. Results are most accurate for 1-10 reps; higher rep ranges become less reliable.")
+            Text("Enter a weight and the number of reps you completed. The calculator takes the median of six formulas to estimate your one-rep max. Results are most accurate for 1-10 reps; higher rep ranges become less reliable. Tap any weight to see how to load it.")
                 .font(SBSFonts.caption())
                 .foregroundStyle(SBSColors.textTertiaryFallback)
                 .fixedSize(horizontal: false, vertical: true)
@@ -514,79 +500,90 @@ struct OneRepMaxCalculatorView: View {
     }
     
     private func formatWeight(_ weight: Double) -> String {
-        if weight.truncatingRemainder(dividingBy: 1) == 0 {
-            return "\(Int(weight)) \(unit)"
-        }
-        return String(format: "%.1f \(unit)", weight)
+        "\(weight.weightString(maxFractionDigits: 1)) \(unit)"
     }
 }
 
 // MARK: - RPE Calculator
 
 struct RPECalculatorView: View {
-    let useMetric: Bool
+    var settings: AppSettings
+    private let initialE1RM: Double?
     
-    @State private var e1rm: String = ""
-    @State private var targetReps: Int = 5
-    @State private var selectedRPE: Double = 8.0
+    private enum Mode: String, CaseIterable, Identifiable {
+        case findWeight = "Find Weight"
+        case findMax = "Find e1RM"
+        var id: String { rawValue }
+    }
+    
+    @AppStorage private var e1rm: String
+    @AppStorage private var setWeight: String
+    @AppStorage("rpe.mode") private var modeRaw = Mode.findWeight.rawValue
+    @AppStorage("rpe.reps") private var targetReps = 5
+    @AppStorage("rpe.rpe") private var selectedRPE = 8.0
+    @State private var didApplyInitial = false
     @FocusState private var isE1RMFocused: Bool
     
+    init(settings: AppSettings, initialE1RM: Double? = nil) {
+        self.settings = settings
+        self.initialE1RM = initialE1RM
+        _e1rm = AppStorage(wrappedValue: "", "rpe.e1rm.\(settings.unitLabel)")
+        _setWeight = AppStorage(wrappedValue: "", "rpe.setWeight.\(settings.unitLabel)")
+    }
+    
+    private var mode: Mode {
+        Mode(rawValue: modeRaw) ?? .findWeight
+    }
+    
     private var e1rmValue: Double? {
-        Double(e1rm)
+        WeightInput.parse(e1rm)
+    }
+    
+    private var setWeightValue: Double? {
+        WeightInput.parse(setWeight)
     }
     
     private var unit: String {
-        useMetric ? "kg" : "lb"
+        settings.unitLabel
     }
     
-    // RPE percentage table (based on Mike Tuchscherer's research)
-    // Rows: reps (1-12), Columns: RPE (6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10)
-    private let rpeTable: [[Double]] = [
-        // 1 rep
-        [0.88, 0.89, 0.91, 0.92, 0.94, 0.96, 0.98, 1.00],
-        // 2 reps
-        [0.85, 0.86, 0.88, 0.89, 0.91, 0.92, 0.94, 0.96],
-        // 3 reps
-        [0.82, 0.84, 0.85, 0.86, 0.88, 0.89, 0.91, 0.92],
-        // 4 reps
-        [0.79, 0.81, 0.82, 0.84, 0.85, 0.86, 0.88, 0.89],
-        // 5 reps
-        [0.77, 0.78, 0.79, 0.81, 0.82, 0.84, 0.85, 0.86],
-        // 6 reps
-        [0.74, 0.75, 0.77, 0.78, 0.79, 0.81, 0.82, 0.84],
-        // 7 reps
-        [0.71, 0.73, 0.74, 0.75, 0.77, 0.78, 0.79, 0.81],
-        // 8 reps
-        [0.68, 0.70, 0.71, 0.73, 0.74, 0.75, 0.77, 0.78],
-        // 9 reps
-        [0.65, 0.67, 0.68, 0.70, 0.71, 0.73, 0.74, 0.75],
-        // 10 reps
-        [0.63, 0.65, 0.66, 0.67, 0.68, 0.70, 0.71, 0.73],
-        // 11 reps
-        [0.60, 0.62, 0.63, 0.65, 0.66, 0.67, 0.68, 0.70],
-        // 12 reps
-        [0.58, 0.60, 0.61, 0.62, 0.63, 0.65, 0.66, 0.67]
-    ]
-    
-    private let rpeValues: [Double] = [6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0]
+    private let rpeValues = RPETable.rpeValues
     
     private func percentageFor(reps: Int, rpe: Double) -> Double {
-        let repsIndex = min(max(reps - 1, 0), 11)
-        let rpeIndex = rpeValues.firstIndex(of: rpe) ?? 3
-        return rpeTable[repsIndex][rpeIndex]
+        RPETable.percentage(reps: reps, rpe: rpe)
     }
     
     private var calculatedWeight: Double? {
         guard let e1rm = e1rmValue else { return nil }
-        let percentage = percentageFor(reps: targetReps, rpe: selectedRPE)
-        return e1rm * percentage
+        return RPETable.weight(e1RM: e1rm, reps: targetReps, rpe: selectedRPE)
+    }
+    
+    private var calculatedMax: Double? {
+        guard let weight = setWeightValue else { return nil }
+        return RPETable.e1RM(weight: weight, reps: targetReps, rpe: selectedRPE)
+    }
+    
+    /// The max the reference grid is built from, in either mode
+    private var activeMax: Double? {
+        mode == .findWeight ? e1rmValue : calculatedMax
     }
     
     var body: some View {
         ScrollView {
             VStack(spacing: SBSLayout.sectionSpacing) {
-                // E1RM input
-                e1rmInputSection
+                Picker("Mode", selection: $modeRaw) {
+                    ForEach(Mode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                
+                if mode == .findWeight {
+                    e1rmInputSection
+                } else {
+                    setWeightInputSection
+                }
                 
                 // Reps selector
                 repsSection
@@ -595,8 +592,14 @@ struct RPECalculatorView: View {
                 rpeSection
                 
                 // Result
-                if let weight = calculatedWeight {
+                if mode == .findWeight, let weight = calculatedWeight {
                     resultSection(weight: weight)
+                } else if mode == .findMax, let max = calculatedMax {
+                    maxResultSection(max: max)
+                }
+                
+                if let activeMax {
+                    rpeGridSection(e1rm: activeMax)
                 }
                 
                 // RPE table
@@ -607,9 +610,130 @@ struct RPECalculatorView: View {
             .padding(.top)
         }
         .scrollDismissesKeyboard(.interactively)
+        .keyboardDoneToolbar()
         .sbsBackground()
         .navigationTitle("RPE Calculator")
         .navigationBarTitleDisplayMode(.inline)
+        .sensoryFeedback(.selection, trigger: targetReps)
+        .sensoryFeedback(.selection, trigger: selectedRPE)
+        .recordsCalculation(key: activeMax.map { "\($0)-\(targetReps)-\(selectedRPE)-\(modeRaw)" })
+        .onAppear {
+            if let initialE1RM, !didApplyInitial {
+                e1rm = initialE1RM.weightString(maxFractionDigits: 1)
+                modeRaw = Mode.findWeight.rawValue
+            }
+            didApplyInitial = true
+        }
+    }
+    
+    private var setWeightInputSection: some View {
+        VStack(alignment: .leading, spacing: SBSLayout.paddingSmall) {
+            Text("The Set You Completed")
+                .font(SBSFonts.title3())
+                .foregroundStyle(SBSColors.textPrimaryFallback)
+            
+            WeightField(label: "Weight", text: $setWeight, unit: unit)
+            
+            Text("Pick the reps you did and how hard it felt below.")
+                .font(SBSFonts.caption())
+                .foregroundStyle(SBSColors.textTertiaryFallback)
+        }
+        .padding()
+        .sbsCard()
+        .padding(.horizontal)
+    }
+    
+    private func maxResultSection(max: Double) -> some View {
+        VStack(spacing: SBSLayout.paddingMedium) {
+            VStack(spacing: 8) {
+                Text("Estimated 1RM")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                
+                Text("\(max.weightString(maxFractionDigits: 1)) \(unit)")
+                    .heroNumberFont()
+                    .foregroundStyle(SBSColors.accentFallback)
+                
+                Text("\(setWeight) \(unit) × \(targetReps) @ RPE \(String(format: "%.1f", selectedRPE))")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.textTertiaryFallback)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, SBSLayout.paddingLarge)
+            .background(
+                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
+                    .fill(SBSColors.accentFallback.opacity(0.1))
+            )
+            
+            ResultActions {
+                ResultLink(title: "Use in Training Max", icon: "percent", route: .trainingMax(max: (max * 10).rounded() / 10))
+                if let setWeightValue {
+                    PremiumResultLink(title: "Back-off Sets", icon: "arrow.down.right", feature: .backoffSets, route: .backoff(topSet: setWeightValue))
+                    SaveSetButton(weight: setWeightValue, reps: targetReps, rpe: selectedRPE, useMetric: settings.useMetric)
+                }
+                ShareResultButton(
+                    title: "Estimated 1RM",
+                    value: "\(max.weightString(maxFractionDigits: 1)) \(unit)",
+                    detail: "\(setWeight) \(unit) × \(targetReps) @ RPE \(String(format: "%.1f", selectedRPE))"
+                )
+            }
+        }
+        .padding(.horizontal)
+    }
+    
+    /// Weights for every reps and RPE combination, with the current choice highlighted
+    private func rpeGridSection(e1rm: Double) -> some View {
+        let columns = rpeValues.filter { $0 >= 7 }.reversed().map { $0 }
+        
+        return VStack(alignment: .leading, spacing: SBSLayout.paddingSmall) {
+            Text("Weights by Reps and RPE (\(unit))")
+                .font(SBSFonts.captionBold())
+                .foregroundStyle(SBSColors.textSecondaryFallback)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                Grid(horizontalSpacing: 4, verticalSpacing: 4) {
+                    GridRow {
+                        Text("Reps")
+                            .font(SBSFonts.caption())
+                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                        ForEach(columns, id: \.self) { rpe in
+                            Text(String(format: "%.1f", rpe))
+                                .font(SBSFonts.captionBold())
+                                .foregroundStyle(SBSColors.textSecondaryFallback)
+                        }
+                    }
+                    
+                    ForEach(Array(RPETable.repRange), id: \.self) { reps in
+                        GridRow {
+                            Text("\(reps)")
+                                .font(SBSFonts.captionBold())
+                                .foregroundStyle(SBSColors.textSecondaryFallback)
+                            
+                            ForEach(columns, id: \.self) { rpe in
+                                let isSelected = reps == targetReps && rpe == selectedRPE
+                                Button {
+                                    targetReps = reps
+                                    selectedRPE = rpe
+                                } label: {
+                                    Text(settings.rounded(RPETable.weight(e1RM: e1rm, reps: reps, rpe: rpe)).weightString(maxFractionDigits: settings.roundingIncrement > 0 ? 2 : 1))
+                                        .font(SBSFonts.caption())
+                                        .monospacedDigit()
+                                        .foregroundStyle(isSelected ? .white : SBSColors.textPrimaryFallback)
+                                        .frame(minWidth: 36, minHeight: 32)
+                                        .background(isSelected ? SBSColors.accentFallback : SBSColors.surfaceElevatedFallback)
+                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                }
+                                .accessibilityLabel("\(reps) reps at RPE \(String(format: "%.1f", rpe))")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(SBSColors.surfaceFallback)
+        .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+        .padding(.horizontal)
     }
     
     private var e1rmInputSection: some View {
@@ -633,10 +757,12 @@ struct RPECalculatorView: View {
                     .foregroundStyle(SBSColors.textSecondaryFallback)
             }
             .padding()
-            .background(SBSColors.surfaceFallback)
+            .background(SBSColors.surfaceElevatedFallback)
             .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
             
-            Text("Use the 1RM Calculator if you don't know your estimated max")
+            LiftFillChips(useMetric: settings.useMetric) { e1rm = $0.weightString(maxFractionDigits: 1) }
+            
+            Text("Don't know it? Switch to Find e1RM above, or use the One-Rep Max calculator.")
                 .font(SBSFonts.caption())
                 .foregroundStyle(SBSColors.textTertiaryFallback)
         }
@@ -653,7 +779,7 @@ struct RPECalculatorView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(1...12, id: \.self) { rep in
+                    ForEach(Array(RPETable.repRange), id: \.self) { rep in
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 targetReps = rep
@@ -664,7 +790,7 @@ struct RPECalculatorView: View {
                                 .foregroundStyle(targetReps == rep ? .white : SBSColors.textPrimaryFallback)
                                 .frame(width: 44, height: 44)
                                 .background(
-                                    targetReps == rep ? SBSColors.accentFallback : SBSColors.surfaceFallback
+                                    targetReps == rep ? SBSColors.accentFallback : SBSColors.surfaceElevatedFallback
                                 )
                                 .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                         }
@@ -700,11 +826,13 @@ struct RPECalculatorView: View {
                     } label: {
                         Text(String(format: "%.1f", rpe))
                             .font(SBSFonts.caption())
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
                             .foregroundStyle(selectedRPE == rpe ? .white : SBSColors.textPrimaryFallback)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
                             .background(
-                                selectedRPE == rpe ? rpeColor(rpe) : SBSColors.surfaceFallback
+                                selectedRPE == rpe ? rpeColor(rpe) : SBSColors.surfaceElevatedFallback
                             )
                             .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                     }
@@ -717,26 +845,36 @@ struct RPECalculatorView: View {
     }
     
     private func resultSection(weight: Double) -> some View {
-        VStack(spacing: 8) {
-            Text("Target Weight")
-                .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
+        let load = settings.rounded(weight)
+        
+        return VStack(spacing: SBSLayout.paddingMedium) {
+            VStack(spacing: 8) {
+                Text("Target Weight")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                
+                Text(settings.loadString(weight))
+                    .heroNumberFont()
+                    .foregroundStyle(SBSColors.accentFallback)
+                
+                let percentage = percentageFor(reps: targetReps, rpe: selectedRPE)
+                Text("\(Int((percentage * 100).rounded()))% of E1RM for \(targetReps) reps @ RPE \(String(format: "%.1f", selectedRPE))")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.textTertiaryFallback)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, SBSLayout.paddingLarge)
+            .background(
+                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
+                    .fill(SBSColors.accentFallback.opacity(0.1))
+            )
             
-            Text(formatWeight(weight))
-                .font(.system(size: 48, weight: .bold, design: .rounded))
-                .foregroundStyle(SBSColors.accentFallback)
-            
-            let percentage = percentageFor(reps: targetReps, rpe: selectedRPE)
-            Text("\(Int(percentage * 100))% of E1RM for \(targetReps) reps @ RPE \(String(format: "%.1f", selectedRPE))")
-                .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textTertiaryFallback)
+            ResultActions {
+                ResultLink(title: "Load this weight", icon: "circle.grid.2x1.fill", route: .plate(weight: load))
+                PremiumResultLink(title: "Warm up to it", icon: "flame.fill", feature: .warmups, route: .warmups(topSet: load))
+                PremiumResultLink(title: "Back-off Sets", icon: "arrow.down.right", feature: .backoffSets, route: .backoff(topSet: load))
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, SBSLayout.paddingLarge)
-        .background(
-            RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                .fill(SBSColors.accentFallback.opacity(0.1))
-        )
         .padding(.horizontal)
     }
     
@@ -809,32 +947,31 @@ struct RPECalculatorView: View {
         }
     }
     
-    private func formatWeight(_ weight: Double) -> String {
-        if weight.truncatingRemainder(dividingBy: 1) == 0 {
-            return "\(Int(weight)) \(unit)"
-        }
-        return String(format: "%.1f \(unit)", weight)
-    }
 }
 
 // MARK: - Standalone Plate Calculator
 
 struct StandalonePlateCalculatorView: View {
     var settings: AppSettings
-    let defaultBarWeight: Double
+    private let initialWeight: Double?
     
-    @State private var targetWeight: String = ""
+    @AppStorage("plate.target") private var targetWeight: String = ""
+    @AppStorage("plate.recent.lb") private var recentImperial: String = ""
+    @AppStorage("plate.recent.kg") private var recentMetric: String = ""
     @State private var barWeight: Double
+    @State private var didApplyInitial = false
+    @State private var steppedCount = 0
     @State private var showingSettings = false
+    @State private var paywallFeature: PremiumFeature?
     @State private var showingCustomBarWeight = false
     @State private var customBarWeight: String = ""
     @FocusState private var isWeightFocused: Bool
     @FocusState private var isBarWeightFocused: Bool
     
-    init(useMetric: Bool, defaultBarWeight: Double, settings: AppSettings? = nil) {
-        self.settings = settings ?? AppSettings()
-        self.defaultBarWeight = defaultBarWeight
-        _barWeight = State(initialValue: defaultBarWeight)
+    init(settings: AppSettings, initialWeight: Double? = nil) {
+        self.settings = settings
+        self.initialWeight = initialWeight
+        _barWeight = State(initialValue: settings.barWeight)
     }
     
     private var useMetric: Bool {
@@ -842,11 +979,22 @@ struct StandalonePlateCalculatorView: View {
     }
     
     private var targetWeightValue: Double {
-        Double(targetWeight) ?? 0
+        WeightInput.parse(targetWeight, maximum: PlateCalculator.maximumTotalWeight) ?? 0
     }
     
     private var unit: String {
         useMetric ? "kg" : "lb"
+    }
+    
+    /// How far the plus and minus buttons move the weight
+    private var stepSize: Double {
+        settings.roundingIncrement > 0
+            ? settings.roundingIncrement
+            : WeightRounding.defaultIncrement(useMetric: useMetric)
+    }
+    
+    private var recentWeights: [Double] {
+        RecentWeights.decode(useMetric ? recentMetric : recentImperial)
     }
     
     private var commonBarWeights: [Double] {
@@ -872,6 +1020,11 @@ struct StandalonePlateCalculatorView: View {
                 // Bar weight selector
                 barWeightSection
                 
+                // Gym switcher
+                if StoreManager.shared.canAccess(.gymProfiles) && settings.gymProfiles.count > 1 {
+                    gymSwitcher
+                }
+                
                 // Barbell visualization
                 if targetWeightValue > 0 {
                     barbellSection
@@ -894,6 +1047,7 @@ struct StandalonePlateCalculatorView: View {
             .padding(.top)
         }
         .scrollDismissesKeyboard(.interactively)
+        .keyboardDoneToolbar()
         .sbsBackground()
         .navigationTitle("Plate Calculator")
         .navigationBarTitleDisplayMode(.inline)
@@ -905,16 +1059,88 @@ struct StandalonePlateCalculatorView: View {
                     Image(systemName: hasCustomizations ? "gearshape.fill" : "gearshape")
                         .foregroundStyle(hasCustomizations ? SBSColors.accentFallback : SBSColors.textSecondaryFallback)
                 }
+                .accessibilityLabel("Settings")
             }
         }
         .sheet(isPresented: $showingSettings) {
             PlateSettingsView(settings: settings)
         }
+        .sheet(item: $paywallFeature) { feature in
+            PaywallView(triggeredByFeature: feature)
+        }
+        .onChange(of: settings.barWeight) { _, newValue in
+            barWeight = newValue
+        }
+        .onChange(of: settings.useMetric) { _, _ in
+            // The typed number means something different in the new unit
+            targetWeight = ""
+            showingCustomBarWeight = false
+        }
+        .sensoryFeedback(.selection, trigger: steppedCount)
+        .recordsCalculation(key: targetWeightValue > 0 ? "\(targetWeightValue)-\(barWeight)" : nil)
+        .task(id: targetWeightValue) {
+            // Long enough that half-typed numbers don't end up in the list
+            guard targetWeightValue > 0 else { return }
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            rememberCurrentWeight()
+        }
+        .onAppear {
+            if let initialWeight, !didApplyInitial {
+                targetWeight = initialWeight.weightString()
+            }
+            didApplyInitial = true
+        }
+    }
+    
+    private func rememberCurrentWeight() {
+        let updated = RecentWeights.encode(RecentWeights.adding(targetWeightValue, to: recentWeights))
+        if useMetric {
+            recentMetric = updated
+        } else {
+            recentImperial = updated
+        }
+    }
+    
+    private var gymSwitcher: some View {
+        Menu {
+            ForEach(settings.gymProfiles) { profile in
+                Button {
+                    settings.selectGymProfile(id: profile.id)
+                } label: {
+                    if profile.id == settings.activeGymProfileID {
+                        Label(profile.name, systemImage: "checkmark")
+                    } else {
+                        Text(profile.name)
+                    }
+                }
+            }
+        } label: {
+            HStack {
+                Image(systemName: "building.2.fill")
+                Text(settings.activeGymProfile?.name ?? "Gym")
+                    .font(SBSFonts.bodyBold())
+                Spacer()
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption)
+            }
+            .foregroundStyle(SBSColors.accentFallback)
+            .padding()
+            .sbsCard()
+        }
+        .padding(.horizontal)
+    }
+    
+    /// Sets the field to a nearby weight, as when stepping or picking a suggestion
+    private func setTarget(_ weight: Double) {
+        targetWeight = weight.weightString()
+        isWeightFocused = false
+        steppedCount += 1
     }
     
     private var premiumNudgeSection: some View {
         Button {
-            showingSettings = true
+            paywallFeature = .myPlates
         } label: {
             HStack(spacing: SBSLayout.paddingMedium) {
                 ZStack {
@@ -939,21 +1165,7 @@ struct StandalonePlateCalculatorView: View {
                             .font(SBSFonts.bodyBold())
                             .foregroundStyle(SBSColors.textPrimaryFallback)
                         
-                        Text("PRO")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [SBSColors.accentFallback, SBSColors.accentSecondaryFallback],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                            )
+                        PremiumBadge()
                     }
                     
                     Text("Set which plates you own for accurate calculations")
@@ -999,24 +1211,59 @@ struct StandalonePlateCalculatorView: View {
                 Spacer()
             }
             
-            HStack {
-                TextField("0", text: $targetWeight)
-                    .font(SBSFonts.weightLarge())
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.center)
-                    .focused($isWeightFocused)
+            HStack(spacing: SBSLayout.paddingSmall) {
+                stepButton(icon: "minus", label: "Decrease weight") {
+                    setTarget(max(0, targetWeightValue - stepSize))
+                }
                 
-                Text(unit)
-                    .font(SBSFonts.title2())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                HStack {
+                    TextField("0", text: $targetWeight)
+                        .font(SBSFonts.weightLarge())
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.center)
+                        .focused($isWeightFocused)
+                        .accessibilityLabel("Total Weight")
+                    
+                    Text(unit)
+                        .font(SBSFonts.title2())
+                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                }
+                .padding()
+                .background(SBSColors.surfaceElevatedFallback)
+                .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+                
+                stepButton(icon: "plus", label: "Increase weight") {
+                    setTarget(min(PlateCalculator.maximumTotalWeight, targetWeightValue + stepSize))
+                }
             }
-            .padding()
-            .background(SBSColors.surfaceFallback)
-            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+            
+            if targetWeightValue > 0 {
+                Text("≈ \(Units.convert(targetWeightValue, fromMetric: useMetric, toMetric: !useMetric).weightString(maxFractionDigits: 1)) \(useMetric ? "lb" : "kg")")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.textTertiaryFallback)
+            }
+            
+            if WeightInput.parse(targetWeight) != nil && targetWeightValue == 0 {
+                Text("Enter a weight up to \(formatWeight(PlateCalculator.maximumTotalWeight))")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.warning)
+            }
         }
         .padding()
         .sbsCard()
         .padding(.horizontal)
+    }
+    
+    private func stepButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.headline)
+                .foregroundStyle(SBSColors.accentFallback)
+                .frame(width: 44, height: 44)
+                .background(SBSColors.accentFallback.opacity(0.1))
+                .clipShape(Circle())
+        }
+        .accessibilityLabel("\(label) by \(stepSize.weightString()) \(unit)")
     }
     
     private var isCustomBarWeight: Bool {
@@ -1045,18 +1292,35 @@ struct StandalonePlateCalculatorView: View {
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 10)
                                 .background(
-                                    barWeight == weight && !showingCustomBarWeight ? SBSColors.accentFallback : SBSColors.surfaceFallback
+                                    barWeight == weight && !showingCustomBarWeight ? SBSColors.accentFallback : SBSColors.surfaceElevatedFallback
                                 )
                                 .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                         }
                     }
                     
                     // Custom bar weight button (premium only)
-                    if StoreManager.shared.canAccess(.extendedEquipment) {
+                    if !StoreManager.shared.canAccess(.extendedEquipment) {
+                        Button {
+                            paywallFeature = .extendedEquipment
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "lock.fill")
+                                    .font(.caption2)
+                                Text("Custom")
+                                    .font(SBSFonts.caption())
+                                    .fixedSize()
+                            }
+                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .background(SBSColors.surfaceElevatedFallback)
+                            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                        }
+                    } else {
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 showingCustomBarWeight = true
-                                customBarWeight = String(format: "%.0f", barWeight)
+                                customBarWeight = barWeight.weightString()
                             }
                             isBarWeightFocused = true
                         } label: {
@@ -1071,7 +1335,7 @@ struct StandalonePlateCalculatorView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 10)
                             .background(
-                                showingCustomBarWeight || isCustomBarWeight ? SBSColors.accentFallback : SBSColors.surfaceFallback
+                                showingCustomBarWeight || isCustomBarWeight ? SBSColors.accentFallback : SBSColors.surfaceElevatedFallback
                             )
                             .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                         }
@@ -1088,11 +1352,11 @@ struct StandalonePlateCalculatorView: View {
                         .textFieldStyle(.plain)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 10)
-                        .background(SBSColors.surfaceFallback)
+                        .background(SBSColors.surfaceElevatedFallback)
                         .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                         .focused($isBarWeightFocused)
                         .onChange(of: customBarWeight) { _, newValue in
-                            if let weight = Double(newValue), weight > 0 {
+                            if let weight = WeightInput.parse(newValue, maximum: PlateCalculator.maximumTotalWeight) {
                                 barWeight = weight
                             }
                         }
@@ -1122,8 +1386,8 @@ struct StandalonePlateCalculatorView: View {
         let calculator = PlateCalculator(barWeight: barWeight, settings: settings)
         let result = calculator.calculate(totalWeight: targetWeightValue)
         
-        // Use achievable weight for the barbell display when exact weight can't be made
-        let displayWeight = result.isExact ? targetWeightValue : result.achievableWeight
+        // Show what's actually on the bar when the exact weight can't be made
+        let displayWeight = result.achievableWeight
         
         return VStack(spacing: SBSLayout.paddingMedium) {
             // Warning banner at top if weight can't be achieved
@@ -1142,14 +1406,28 @@ struct StandalonePlateCalculatorView: View {
                     }
                     .foregroundStyle(.white)
                     
+                    HStack(spacing: 8) {
+                        closestLoadButton(label: "Below", weight: result.achievableWeight)
+                        if let above = calculator.closestLoad(atOrAbove: targetWeightValue) {
+                            closestLoadButton(label: "Above", weight: above)
+                        }
+                    }
+                    
                     if settings.useMyPlates && StoreManager.shared.canAccess(.myPlates) {
                         Text("Add more plates in Settings to reach this weight.")
                             .font(SBSFonts.caption())
                             .foregroundStyle(.white.opacity(0.8))
                     } else if !StoreManager.shared.canAccess(.extendedEquipment) {
-                        Text("Upgrade to Premium for 1.25 lb change plates.")
-                            .font(SBSFonts.caption())
-                            .foregroundStyle(.white.opacity(0.8))
+                        Button {
+                            paywallFeature = .extendedEquipment
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("Upgrade to Premium for \(useMetric ? "0.5 kg" : "1.25 lb") change plates")
+                                Image(systemName: "chevron.right")
+                            }
+                            .font(SBSFonts.captionBold())
+                            .foregroundStyle(.white)
+                        }
                     }
                 }
                 .padding()
@@ -1171,10 +1449,17 @@ struct StandalonePlateCalculatorView: View {
             // Plate breakdown
             if !result.platesPerSide.isEmpty {
                 PlateBreakdownView(result: result, useMetric: useMetric)
-            } else if targetWeightValue <= barWeight {
-                Text("Bar only - no plates needed")
+            } else if targetWeightValue <= calculator.emptyLoad {
+                Text(targetWeightValue < calculator.emptyLoad
+                     ? "\(formatWeight(targetWeightValue)) is lighter than the bar"
+                     : "Bar only - no plates needed")
                     .font(SBSFonts.body())
                     .foregroundStyle(SBSColors.textSecondaryFallback)
+            }
+            
+            ResultActions {
+                PremiumResultLink(title: "Warm up to it", icon: "flame.fill", feature: .warmups, route: .warmups(topSet: displayWeight))
+                PremiumResultLink(title: "Back-off Sets", icon: "arrow.down.right", feature: .backoffSets, route: .backoff(topSet: displayWeight))
             }
         }
         .padding()
@@ -1182,8 +1467,47 @@ struct StandalonePlateCalculatorView: View {
         .padding(.horizontal)
     }
     
+    private func closestLoadButton(label: String, weight: Double) -> some View {
+        Button {
+            setTarget(weight)
+        } label: {
+            Text("\(label): \(formatWeight(weight))")
+                .font(SBSFonts.captionBold())
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(.white.opacity(0.2))
+                .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+        }
+    }
+    
     private var quickWeightsSection: some View {
         VStack(alignment: .leading, spacing: SBSLayout.paddingSmall) {
+            if !recentWeights.isEmpty {
+                Text("Recent")
+                    .font(SBSFonts.captionBold())
+                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(recentWeights, id: \.self) { weight in
+                            Button {
+                                setTarget(weight)
+                            } label: {
+                                Text(formatWeightShort(weight))
+                                    .font(SBSFonts.caption())
+                                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(SBSColors.surfaceElevatedFallback)
+                                    .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                            }
+                        }
+                    }
+                }
+                .padding(.bottom, 4)
+            }
+            
             Text("Quick Select")
                 .font(SBSFonts.captionBold())
                 .foregroundStyle(SBSColors.textSecondaryFallback)
@@ -1200,8 +1524,7 @@ struct StandalonePlateCalculatorView: View {
             ], spacing: 8) {
                 ForEach(quickWeights, id: \.self) { weight in
                     Button {
-                        targetWeight = formatWeightShort(weight)
-                        isWeightFocused = false
+                        setTarget(weight)
                     } label: {
                         Text(formatWeightShort(weight))
                             .font(SBSFonts.caption())
@@ -1221,17 +1544,11 @@ struct StandalonePlateCalculatorView: View {
     }
     
     private func formatWeight(_ weight: Double) -> String {
-        if weight.truncatingRemainder(dividingBy: 1) == 0 {
-            return "\(Int(weight)) \(unit)"
-        }
-        return String(format: "%.1f \(unit)", weight)
+        "\(weight.weightString()) \(unit)"
     }
     
     private func formatWeightShort(_ weight: Double) -> String {
-        if weight.truncatingRemainder(dividingBy: 1) == 0 {
-            return "\(Int(weight))"
-        }
-        return String(format: "%.1f", weight)
+        weight.weightString()
     }
 }
 
@@ -1251,7 +1568,7 @@ struct PlateBreakdownView: View {
             let grouped = Dictionary(grouping: result.platesPerSide) { $0.weight }
             let sortedWeights = grouped.keys.sorted(by: >)
             
-            HStack(spacing: 12) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), alignment: .leading)], alignment: .leading, spacing: 8) {
                 ForEach(sortedWeights, id: \.self) { weight in
                     if let plates = grouped[weight], let plate = plates.first {
                         HStack(spacing: 4) {
@@ -1279,14 +1596,22 @@ struct PlateBreakdownView: View {
 // MARK: - Training Max Calculator
 
 struct TrainingMaxCalculatorView: View {
-    let useMetric: Bool
+    var settings: AppSettings
+    private let initialMax: Double?
     
-    @State private var actualMax: String = ""
-    @State private var tmPercentage: Double = 90
+    @AppStorage private var actualMax: String
+    @AppStorage("trainingMax.percentage") private var tmPercentage: Double = 90
+    @State private var didApplyInitial = false
     @FocusState private var isMaxFocused: Bool
     
+    init(settings: AppSettings, initialMax: Double? = nil) {
+        self.settings = settings
+        self.initialMax = initialMax
+        _actualMax = AppStorage(wrappedValue: "", "trainingMax.max.\(settings.unitLabel)")
+    }
+    
     private var actualMaxValue: Double? {
-        Double(actualMax)
+        WeightInput.parse(actualMax)
     }
     
     private var trainingMax: Double? {
@@ -1295,7 +1620,7 @@ struct TrainingMaxCalculatorView: View {
     }
     
     private var unit: String {
-        useMetric ? "kg" : "lb"
+        settings.unitLabel
     }
     
     // Common TM percentages used in different programs
@@ -1336,9 +1661,17 @@ struct TrainingMaxCalculatorView: View {
             .padding(.top)
         }
         .scrollDismissesKeyboard(.interactively)
+        .keyboardDoneToolbar()
         .sbsBackground()
         .navigationTitle("Training Max")
         .navigationBarTitleDisplayMode(.inline)
+        .recordsCalculation(key: trainingMax.map { "\($0)" })
+        .onAppear {
+            if let initialMax, !didApplyInitial {
+                actualMax = initialMax.weightString(maxFractionDigits: 1)
+            }
+            didApplyInitial = true
+        }
     }
     
     private var actualMaxSection: some View {
@@ -1362,8 +1695,10 @@ struct TrainingMaxCalculatorView: View {
                     .foregroundStyle(SBSColors.textSecondaryFallback)
             }
             .padding()
-            .background(SBSColors.surfaceFallback)
+            .background(SBSColors.surfaceElevatedFallback)
             .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+            
+            LiftFillChips(useMetric: settings.useMetric) { actualMax = $0.weightString(maxFractionDigits: 1) }
             
             Text("Your tested or estimated one-rep max")
                 .font(SBSFonts.caption())
@@ -1377,7 +1712,7 @@ struct TrainingMaxCalculatorView: View {
     private var tmPercentageSection: some View {
         VStack(alignment: .leading, spacing: SBSLayout.paddingSmall) {
             HStack {
-                Text("TM Percentage: \(Int(tmPercentage))%")
+                Text("TM Percentage: \(tmPercentage.weightString(maxFractionDigits: 1))%")
                     .font(SBSFonts.bodyBold())
                     .foregroundStyle(SBSColors.textPrimaryFallback)
                 
@@ -1396,13 +1731,15 @@ struct TrainingMaxCalculatorView: View {
                             tmPercentage = preset.value
                         }
                     } label: {
-                        Text("\(Int(preset.value))%")
+                        Text("\(preset.value.weightString(maxFractionDigits: 1))%")
                             .font(SBSFonts.caption())
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
                             .foregroundStyle(tmPercentage == preset.value ? .white : SBSColors.textPrimaryFallback)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
                             .background(
-                                tmPercentage == preset.value ? SBSColors.accentFallback : SBSColors.surfaceFallback
+                                tmPercentage == preset.value ? SBSColors.accentFallback : SBSColors.surfaceElevatedFallback
                             )
                             .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                     }
@@ -1423,27 +1760,34 @@ struct TrainingMaxCalculatorView: View {
     }
     
     private func trainingMaxResultSection(tm: Double) -> some View {
-        VStack(spacing: 8) {
-            Text("Training Max")
-                .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
-            
-            Text(formatWeight(tm))
-                .font(.system(size: 48, weight: .bold, design: .rounded))
-                .foregroundStyle(SBSColors.accentFallback)
-            
-            if let max = actualMaxValue {
-                Text("\(Int(tmPercentage))% of \(formatWeight(max))")
+        VStack(spacing: SBSLayout.paddingMedium) {
+            VStack(spacing: 8) {
+                Text("Training Max")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                
+                Text(formatWeight(tm))
+                    .heroNumberFont()
+                    .foregroundStyle(SBSColors.accentFallback)
+                
+                if let max = actualMaxValue {
+                    Text("\(tmPercentage.weightString(maxFractionDigits: 1))% of \(max.weightString(maxFractionDigits: 1)) \(unit)")
+                        .font(SBSFonts.caption())
+                        .foregroundStyle(SBSColors.textTertiaryFallback)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, SBSLayout.paddingLarge)
+            .background(
+                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
+                    .fill(SBSColors.accentFallback.opacity(0.1))
+            )
+            
+            ResultActions {
+                ResultLink(title: "Load this weight", icon: "circle.grid.2x1.fill", route: .plate(weight: settings.rounded(tm)))
+                PremiumResultLink(title: "Warm up to it", icon: "flame.fill", feature: .warmups, route: .warmups(topSet: settings.rounded(tm)))
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, SBSLayout.paddingLarge)
-        .background(
-            RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                .fill(SBSColors.accentFallback.opacity(0.1))
-        )
         .padding(.horizontal)
     }
     
@@ -1465,12 +1809,14 @@ struct TrainingMaxCalculatorView: View {
                         Text("\(percentage)%")
                             .font(SBSFonts.caption())
                             .foregroundStyle(SBSColors.textSecondaryFallback)
-                            .frame(width: 40, alignment: .leading)
+                            .fixedSize()
                         
-                        Spacer()
+                        Spacer(minLength: 4)
                         
                         Text(formatWeight(weight))
                             .font(SBSFonts.bodyBold())
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                             .foregroundStyle(percentage == 100 ? SBSColors.accentFallback : SBSColors.textPrimaryFallback)
                     }
                     .padding(.horizontal, 12)
@@ -1484,17 +1830,22 @@ struct TrainingMaxCalculatorView: View {
                 }
             }
             
-            // Common rep schemes
+            // 5/3/1 cycle
             VStack(alignment: .leading, spacing: 8) {
-                Text("Common Programming")
+                Text("5/3/1 Cycle")
                     .font(SBSFonts.captionBold())
                     .foregroundStyle(SBSColors.textSecondaryFallback)
                     .padding(.top, 8)
                 
-                programmingRow(name: "5/3/1 Week 1 (5s)", percentage: 85, tm: tm)
-                programmingRow(name: "5/3/1 Week 2 (3s)", percentage: 90, tm: tm)
-                programmingRow(name: "5/3/1 Week 3 (5/3/1)", percentage: 95, tm: tm)
-                programmingRow(name: "Joker Sets", percentage: 100, tm: tm)
+                programmingWeek(name: "Week 1 (5s)", sets: [(65, "5"), (75, "5"), (85, "5+")], tm: tm)
+                programmingWeek(name: "Week 2 (3s)", sets: [(70, "3"), (80, "3"), (90, "3+")], tm: tm)
+                programmingWeek(name: "Week 3 (5/3/1)", sets: [(75, "5"), (85, "3"), (95, "1+")], tm: tm)
+                programmingWeek(name: "Week 4 (Deload)", sets: [(40, "5"), (50, "5"), (60, "5")], tm: tm)
+                
+                Text("\"+\" means as many good reps as you can. Joker sets are optional heavier sets after the top set, usually in 5-10% jumps.")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding()
@@ -1503,24 +1854,25 @@ struct TrainingMaxCalculatorView: View {
         .padding(.horizontal)
     }
     
-    private func programmingRow(name: String, percentage: Int, tm: Double) -> some View {
-        let weight = tm * Double(percentage) / 100.0
-        
-        return HStack {
+    private func programmingWeek(name: String, sets: [(percentage: Int, reps: String)], tm: Double) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
             Text(name)
-                .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
-            
-            Spacer()
-            
-            Text("\(percentage)%")
-                .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textTertiaryFallback)
-            
-            Text(formatWeight(weight))
                 .font(SBSFonts.captionBold())
                 .foregroundStyle(SBSColors.textPrimaryFallback)
-                .frame(width: 70, alignment: .trailing)
+            
+            ForEach(sets, id: \.percentage) { set in
+                HStack {
+                    Text("\(set.percentage)% × \(set.reps)")
+                        .font(SBSFonts.caption())
+                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                    
+                    Spacer()
+                    
+                    Text(formatWeight(tm * Double(set.percentage) / 100.0))
+                        .font(SBSFonts.captionBold())
+                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                }
+            }
         }
         .padding(.vertical, 4)
     }
@@ -1547,32 +1899,38 @@ struct TrainingMaxCalculatorView: View {
     }
     
     private func formatWeight(_ weight: Double) -> String {
-        // Round to nearest 2.5 (or 1 for metric)
-        let roundingIncrement = useMetric ? 1.0 : 2.5
-        let rounded = (weight / roundingIncrement).rounded() * roundingIncrement
-        
-        if rounded.truncatingRemainder(dividingBy: 1) == 0 {
-            return "\(Int(rounded)) \(unit)"
-        }
-        return String(format: "%.1f \(unit)", rounded)
+        settings.loadString(weight)
     }
 }
 
 // MARK: - Strength Scores View
 
 struct StrengthScoresView: View {
-    let useMetric: Bool
+    var settings: AppSettings
     
-    @State private var bodyWeight: String = ""
-    @State private var total: String = ""
-    @State private var squat: String = ""
-    @State private var bench: String = ""
-    @State private var deadlift: String = ""
-    @State private var useIndividualLifts: Bool = false
-    @State private var isMale: Bool = true
-    @State private var showResults = false
+    @AppStorage private var bodyWeight: String
+    @AppStorage private var total: String
+    @AppStorage private var squat: String
+    @AppStorage private var bench: String
+    @AppStorage private var deadlift: String
+    @AppStorage("scores.useIndividualLifts") private var useIndividualLifts: Bool = false
+    @AppStorage("scores.isMale") private var isMale: Bool = true
     @State private var selectedFormula: StrengthFormula = .wilks
     @FocusState private var focusedField: StrengthField?
+    
+    init(settings: AppSettings) {
+        self.settings = settings
+        let unit = settings.unitLabel
+        _bodyWeight = AppStorage(wrappedValue: "", "scores.bodyWeight.\(unit)")
+        _total = AppStorage(wrappedValue: "", "scores.total.\(unit)")
+        _squat = AppStorage(wrappedValue: "", "scores.squat.\(unit)")
+        _bench = AppStorage(wrappedValue: "", "scores.bench.\(unit)")
+        _deadlift = AppStorage(wrappedValue: "", "scores.deadlift.\(unit)")
+    }
+    
+    private var useMetric: Bool {
+        settings.useMetric
+    }
     
     enum StrengthField {
         case bodyWeight, total, squat, bench, deadlift
@@ -1585,19 +1943,19 @@ struct StrengthScoresView: View {
     }
     
     private var bodyWeightValue: Double? {
-        Double(bodyWeight)
+        WeightInput.parse(bodyWeight)
     }
     
     private var squatValue: Double {
-        Double(squat) ?? 0
+        WeightInput.parse(squat) ?? 0
     }
     
     private var benchValue: Double {
-        Double(bench) ?? 0
+        WeightInput.parse(bench) ?? 0
     }
     
     private var deadliftValue: Double {
-        Double(deadlift) ?? 0
+        WeightInput.parse(deadlift) ?? 0
     }
     
     private var calculatedTotal: Double {
@@ -1609,7 +1967,7 @@ struct StrengthScoresView: View {
             let sum = calculatedTotal
             return sum > 0 ? sum : nil
         } else {
-            return Double(total)
+            return WeightInput.parse(total)
         }
     }
     
@@ -1631,89 +1989,6 @@ struct StrengthScoresView: View {
     private var totalKg: Double? {
         guard let t = totalValue else { return nil }
         return useMetric ? t : t * 0.453592
-    }
-    
-    // MARK: - Wilks Calculation
-    
-    private var wilksScore: Double? {
-        guard let bwKg = bodyWeightKg, let tKg = totalKg else { return nil }
-        
-        let a: Double, b: Double, c: Double, d: Double, e: Double, f: Double
-        
-        if isMale {
-            a = -216.0475144
-            b = 16.2606339
-            c = -0.002388645
-            d = -0.00113732
-            e = 7.01863E-06
-            f = -1.291E-08
-        } else {
-            a = 594.31747775582
-            b = -27.23842536447
-            c = 0.82112226871
-            d = -0.00930733913
-            e = 4.731582E-05
-            f = -9.054E-08
-        }
-        
-        let x = bwKg
-        let coefficient = 500.0 / (a + b*x + c*pow(x, 2) + d*pow(x, 3) + e*pow(x, 4) + f*pow(x, 5))
-        
-        return tKg * coefficient
-    }
-    
-    // MARK: - DOTS Calculation
-    
-    private var dotsScore: Double? {
-        guard let bwKg = bodyWeightKg, let tKg = totalKg else { return nil }
-        
-        let a: Double, b: Double, c: Double, d: Double, e: Double
-        
-        if isMale {
-            a = -0.0000010930
-            b = 0.0007391293
-            c = -0.1918759221
-            d = 24.0900756
-            e = -307.75076
-        } else {
-            a = -0.0000010706
-            b = 0.0005158568
-            c = -0.1126655495
-            d = 13.6175032
-            e = -57.96288
-        }
-        
-        let x = bwKg
-        let denominator = a*pow(x, 4) + b*pow(x, 3) + c*pow(x, 2) + d*x + e
-        
-        guard denominator != 0 else { return nil }
-        
-        return tKg * (500.0 / denominator)
-    }
-    
-    // MARK: - IPF GL Points Calculation
-    
-    private var ipfGLScore: Double? {
-        guard let bwKg = bodyWeightKg, let tKg = totalKg else { return nil }
-        
-        // IPF GL coefficients for raw lifting (classic)
-        let a: Double, b: Double, c: Double
-        
-        if isMale {
-            a = 1199.72839
-            b = 1025.18162
-            c = 0.00921
-        } else {
-            a = 610.32796
-            b = 1045.59282
-            c = 0.03048
-        }
-        
-        let denominator = a - b * exp(-c * bwKg)
-        
-        guard denominator > 0 else { return nil }
-        
-        return tKg * (100.0 / denominator)
     }
     
     // Classification based on score (thresholds vary by formula)
@@ -1762,11 +2037,26 @@ struct StrengthScoresView: View {
         }
     }
     
+    /// The next level up, or nil once at the top
+    private func nextLevel(after score: Double, formula: StrengthFormula) -> (name: String, score: Double)? {
+        let thresholds = classificationThresholds(for: formula)
+        let levels: [(String, Double)] = [
+            ("Novice", thresholds.novice),
+            ("Intermediate", thresholds.intermediate),
+            ("Advanced", thresholds.advanced),
+            ("Elite", thresholds.elite),
+            ("World Class", thresholds.worldClass)
+        ]
+        return levels.first { score < $0.1 }.map { (name: $0.0, score: $0.1) }
+    }
+    
     private func scoreFor(_ formula: StrengthFormula) -> Double? {
+        guard let bwKg = bodyWeightKg, let tKg = totalKg else { return nil }
+        
         switch formula {
-        case .wilks: return wilksScore
-        case .dots: return dotsScore
-        case .ipfGL: return ipfGLScore
+        case .wilks: return StrengthScoring.wilks(totalKg: tKg, bodyweightKg: bwKg, isMale: isMale)
+        case .dots: return StrengthScoring.dots(totalKg: tKg, bodyweightKg: bwKg, isMale: isMale)
+        case .ipfGL: return StrengthScoring.ipfGL(totalKg: tKg, bodyweightKg: bwKg, isMale: isMale)
         }
     }
     
@@ -1779,28 +2069,8 @@ struct StrengthScoresView: View {
                 // Input section
                 inputSection
                 
-                // Calculate button
-                if canCalculate {
-                    Button {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            showResults = true
-                        }
-                        focusedField = nil
-                        AppSettings.recordCalculationCompleted()
-                    } label: {
-                        Text("Calculate Scores")
-                            .font(SBSFonts.button())
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, SBSLayout.paddingMedium)
-                            .background(SBSColors.accentFallback)
-                            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
-                    }
-                    .padding(.horizontal)
-                }
-                
                 // Results section
-                if showResults && canCalculate {
+                if canCalculate {
                     resultsSection
                 }
                 
@@ -1815,30 +2085,11 @@ struct StrengthScoresView: View {
             .padding(.top)
         }
         .scrollDismissesKeyboard(.interactively)
+        .keyboardDoneToolbar()
         .sbsBackground()
         .navigationTitle("Strength Scores")
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: bodyWeight) { _, _ in
-            showResults = false
-        }
-        .onChange(of: total) { _, _ in
-            showResults = false
-        }
-        .onChange(of: squat) { _, _ in
-            showResults = false
-        }
-        .onChange(of: bench) { _, _ in
-            showResults = false
-        }
-        .onChange(of: deadlift) { _, _ in
-            showResults = false
-        }
-        .onChange(of: useIndividualLifts) { _, _ in
-            showResults = false
-        }
-        .onChange(of: isMale) { _, _ in
-            showResults = false
-        }
+        .recordsCalculation(key: canCalculate ? "\(bodyWeightValue ?? 0)-\(totalValue ?? 0)-\(isMale)" : nil)
     }
     
     private var sexSelectionSection: some View {
@@ -1861,7 +2112,7 @@ struct StrengthScoresView: View {
                     .foregroundStyle(isMale ? .white : SBSColors.textPrimaryFallback)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(isMale ? SBSColors.accentFallback : SBSColors.surfaceFallback)
+                    .background(isMale ? SBSColors.accentFallback : SBSColors.surfaceElevatedFallback)
                     .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                 }
                 
@@ -1878,7 +2129,7 @@ struct StrengthScoresView: View {
                     .foregroundStyle(!isMale ? .white : SBSColors.textPrimaryFallback)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(!isMale ? SBSColors.accentFallback : SBSColors.surfaceFallback)
+                    .background(!isMale ? SBSColors.accentFallback : SBSColors.surfaceElevatedFallback)
                     .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                 }
             }
@@ -1909,7 +2160,7 @@ struct StrengthScoresView: View {
                     .multilineTextAlignment(.center)
                     .focused($focusedField, equals: .bodyWeight)
                     .padding()
-                    .background(SBSColors.surfaceFallback)
+                    .background(SBSColors.surfaceElevatedFallback)
                     .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
             }
             
@@ -1925,7 +2176,7 @@ struct StrengthScoresView: View {
                         .foregroundStyle(!useIndividualLifts ? .white : SBSColors.textPrimaryFallback)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(!useIndividualLifts ? SBSColors.accentFallback : SBSColors.surfaceFallback)
+                        .background(!useIndividualLifts ? SBSColors.accentFallback : SBSColors.surfaceElevatedFallback)
                         .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                 }
                 
@@ -1939,7 +2190,7 @@ struct StrengthScoresView: View {
                         .foregroundStyle(useIndividualLifts ? .white : SBSColors.textPrimaryFallback)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(useIndividualLifts ? SBSColors.accentFallback : SBSColors.surfaceFallback)
+                        .background(useIndividualLifts ? SBSColors.accentFallback : SBSColors.surfaceElevatedFallback)
                         .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                 }
             }
@@ -1980,7 +2231,7 @@ struct StrengthScoresView: View {
                         .multilineTextAlignment(.center)
                         .focused($focusedField, equals: .total)
                         .padding()
-                        .background(SBSColors.surfaceFallback)
+                        .background(SBSColors.surfaceElevatedFallback)
                         .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                     
                     Text("Squat + Bench + Deadlift")
@@ -1999,7 +2250,7 @@ struct StrengthScoresView: View {
             Text(label)
                 .font(SBSFonts.bodyBold())
                 .foregroundStyle(SBSColors.textPrimaryFallback)
-                .frame(width: 70, alignment: .leading)
+                .frame(minWidth: 70, alignment: .leading)
             
             TextField("0", text: value)
                 .font(SBSFonts.number())
@@ -2008,21 +2259,18 @@ struct StrengthScoresView: View {
                 .focused($focusedField, equals: field)
                 .padding(.vertical, 12)
                 .padding(.horizontal)
-                .background(SBSColors.surfaceFallback)
+                .background(SBSColors.surfaceElevatedFallback)
                 .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
             
             Text(unit)
                 .font(SBSFonts.caption())
                 .foregroundStyle(SBSColors.textSecondaryFallback)
-                .frame(width: 24)
+                .fixedSize()
         }
     }
     
     private func formatWeight(_ weight: Double) -> String {
-        if weight.truncatingRemainder(dividingBy: 1) == 0 {
-            return "\(Int(weight)) \(unit)"
-        }
-        return String(format: "%.1f \(unit)", weight)
+        "\(weight.weightString(maxFractionDigits: 1)) \(unit)"
     }
     
     private var resultsSection: some View {
@@ -2065,7 +2313,7 @@ struct StrengthScoresView: View {
                             .foregroundStyle(SBSColors.textSecondaryFallback)
                         
                         Text(String(format: "%.2f", score))
-                            .font(.system(size: 56, weight: .bold, design: .rounded))
+                            .heroNumberFont(size: 56)
                             .foregroundStyle(formulaColor(selectedFormula))
                         
                         let classInfo = classification(for: score, formula: selectedFormula)
@@ -2076,6 +2324,15 @@ struct StrengthScoresView: View {
                             .padding(.vertical, 8)
                             .background(classInfo.color)
                             .clipShape(Capsule())
+                        
+                        if let next = nextLevel(after: score, formula: selectedFormula),
+                           let currentTotal = totalValue,
+                           let needed = StrengthScoring.total(forScore: next.score, currentScore: score, currentTotal: currentTotal) {
+                            Text("+\(formatWeight(needed - currentTotal)) on your total to reach \(next.name)")
+                                .font(SBSFonts.caption())
+                                .foregroundStyle(SBSColors.textSecondaryFallback)
+                                .multilineTextAlignment(.center)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, SBSLayout.paddingLarge)
@@ -2084,6 +2341,14 @@ struct StrengthScoresView: View {
                             .fill(formulaColor(selectedFormula).opacity(0.1))
                     )
                 }
+            }
+            
+            if let score = scoreFor(selectedFormula) {
+                ShareResultButton(
+                    title: "\(selectedFormula.rawValue) Score",
+                    value: String(format: "%.1f", score),
+                    detail: classification(for: score, formula: selectedFormula).name
+                )
             }
             
             // Calculation details
@@ -2098,7 +2363,7 @@ struct StrengthScoresView: View {
                             .font(SBSFonts.body())
                             .foregroundStyle(SBSColors.textSecondaryFallback)
                         Spacer()
-                        Text(String(format: "%.1f kg", bwKg))
+                        Text(detailWeight(entered: bodyWeightValue, kilograms: bwKg))
                             .font(SBSFonts.bodyBold())
                             .foregroundStyle(SBSColors.textPrimaryFallback)
                     }
@@ -2110,7 +2375,7 @@ struct StrengthScoresView: View {
                             .font(SBSFonts.body())
                             .foregroundStyle(SBSColors.textSecondaryFallback)
                         Spacer()
-                        Text(String(format: "%.1f kg", tKg))
+                        Text(detailWeight(entered: totalValue, kilograms: tKg))
                             .font(SBSFonts.bodyBold())
                             .foregroundStyle(SBSColors.textPrimaryFallback)
                     }
@@ -2122,6 +2387,13 @@ struct StrengthScoresView: View {
         }
         .padding(.horizontal)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
+    }
+    
+    /// Scores are computed in kilograms, so pounds users see both
+    private func detailWeight(entered: Double?, kilograms: Double) -> String {
+        let metric = String(format: "%.1f kg", kilograms)
+        guard !useMetric, let entered else { return metric }
+        return "\(entered.weightString(maxFractionDigits: 1)) lb (\(metric))"
     }
     
     private func scoreCard(formula: StrengthFormula, score: Double) -> some View {
@@ -2170,7 +2442,7 @@ struct StrengthScoresView: View {
                 .foregroundStyle(SBSColors.textSecondaryFallback)
             
             Text(selectedFormula == .ipfGL 
-                 ? "IPF GL scale: 100 = world record level"
+                 ? "Approximate ranges. On the IPF GL scale, 100+ is roughly world class"
                  : "Approximate ranges for \(selectedFormula.rawValue)")
                 .font(SBSFonts.caption())
                 .foregroundStyle(SBSColors.textTertiaryFallback)
@@ -2240,7 +2512,7 @@ struct StrengthScoresView: View {
                 formulaInfoRow(
                     name: "IPF GL",
                     color: .purple,
-                    description: "Official IPF scoring since 2019. Based on world records and updated as records change."
+                    description: "The IPF's official formula, adopted in 2020 to replace its earlier IPF Points."
                 )
             }
         }
@@ -2278,31 +2550,30 @@ struct StrengthScoresView: View {
 
 #Preview("1RM Calculator") {
     NavigationStack {
-        OneRepMaxCalculatorView(useMetric: false)
+        OneRepMaxCalculatorView(settings: AppSettings())
     }
 }
 
 #Preview("RPE Calculator") {
     NavigationStack {
-        RPECalculatorView(useMetric: false)
+        RPECalculatorView(settings: AppSettings())
     }
 }
 
 #Preview("Plate Calculator") {
     NavigationStack {
-        StandalonePlateCalculatorView(useMetric: false, defaultBarWeight: 45)
+        StandalonePlateCalculatorView(settings: AppSettings())
     }
 }
 
 #Preview("Training Max Calculator") {
     NavigationStack {
-        TrainingMaxCalculatorView(useMetric: false)
+        TrainingMaxCalculatorView(settings: AppSettings())
     }
 }
 
 #Preview("Strength Scores") {
     NavigationStack {
-        StrengthScoresView(useMetric: false)
+        StrengthScoresView(settings: AppSettings())
     }
 }
-

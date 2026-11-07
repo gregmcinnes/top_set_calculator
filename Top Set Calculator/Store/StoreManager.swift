@@ -34,7 +34,10 @@ public final class StoreManager {
     
     /// Whether the user has purchased premium
     public var isPremium: Bool {
-        purchasedProductIDs.contains(Self.premiumProductID)
+        #if DEBUG
+        if Self.debugForcePremium { return true }
+        #endif
+        return purchasedProductIDs.contains(Self.premiumProductID)
     }
     
     /// The premium product (if loaded)
@@ -44,7 +47,7 @@ public final class StoreManager {
     
     /// Formatted price string for the premium product
     public var premiumPriceString: String {
-        premiumProduct?.displayPrice ?? "$1.99"
+        premiumProduct?.displayPrice ?? "—"
     }
     
     // MARK: - Initialization
@@ -57,7 +60,6 @@ public final class StoreManager {
         Task {
             await loadProducts()
             await updatePurchasedProducts()
-            await checkReviewMode()
         }
     }
     
@@ -85,9 +87,8 @@ public final class StoreManager {
     }
     
     /// Purchase the premium product
-    /// - Returns: The transaction if successful, nil if cancelled
     @MainActor
-    public func purchasePremium() async throws -> Transaction? {
+    public func purchasePremium() async throws -> PurchaseOutcome {
         guard let product = premiumProduct else {
             // If product not loaded, try loading first
             await loadProducts()
@@ -101,9 +102,8 @@ public final class StoreManager {
     
     /// Purchase a specific product
     /// - Parameter product: The product to purchase
-    /// - Returns: The transaction if successful, nil if cancelled
     @MainActor
-    public func purchase(_ product: Product) async throws -> Transaction? {
+    public func purchase(_ product: Product) async throws -> PurchaseOutcome {
         let result = try await product.purchase()
         
         switch result {
@@ -117,31 +117,26 @@ public final class StoreManager {
             // Finish the transaction
             await transaction.finish()
             
-            return transaction
+            return .purchased
             
         case .userCancelled:
-            return nil
+            return .cancelled
             
         case .pending:
-            // Transaction is pending (e.g., Ask to Buy)
-            return nil
+            // Awaiting approval (e.g., Ask to Buy). The transaction listener unlocks
+            // premium if it is approved later.
+            return .pending
             
         @unknown default:
-            return nil
+            return .cancelled
         }
     }
     
     /// Restore previous purchases
     @MainActor
-    public func restorePurchases() async {
-        do {
-            // This will trigger the transaction listener for any restored purchases
-            try await AppStore.sync()
-            await updatePurchasedProducts()
-        } catch {
-            lastError = error
-            print("Failed to restore purchases: \(error)")
-        }
+    public func restorePurchases() async throws {
+        try await AppStore.sync()
+        await updatePurchasedProducts()
     }
     
     // MARK: - Private Methods
@@ -154,10 +149,9 @@ public final class StoreManager {
                 do {
                     let transaction = try self.checkVerified(result)
                     
-                    // Update the purchased products on the main actor
-                    _ = await MainActor.run {
-                        self.purchasedProductIDs.insert(transaction.productID)
-                    }
+                    // Re-read entitlements rather than trusting this update: it may be
+                    // a refund or revocation, which must remove access.
+                    await self.updatePurchasedProducts()
                     
                     // Always finish transactions
                     await transaction.finish()
@@ -201,6 +195,14 @@ public final class StoreManager {
     }
 }
 
+// MARK: - Purchase Outcome
+
+public enum PurchaseOutcome {
+    case purchased
+    case cancelled
+    case pending
+}
+
 // MARK: - Store Errors
 
 public enum StoreError: LocalizedError {
@@ -224,6 +226,9 @@ public enum StoreError: LocalizedError {
 
 #if DEBUG
 extension StoreManager {
+    /// Grants premium regardless of entitlements, for tests. Launch with -debugPremium to set it.
+    nonisolated(unsafe) public static var debugForcePremium = ProcessInfo.processInfo.arguments.contains("-debugPremium")
+    
     /// Force premium status for testing (DEBUG only)
     @MainActor
     public func setDebugPremium(_ isPremium: Bool) {
@@ -235,38 +240,3 @@ extension StoreManager {
     }
 }
 #endif
-
-// MARK: - App Review Mode
-
-extension StoreManager {
-    /// Key for storing review mode state
-    private static let reviewModeKey = "com.topsetcalculator.reviewMode"
-    
-    /// Whether app review mode is enabled (unlocks all features for Apple reviewers)
-    public var isReviewModeEnabled: Bool {
-        UserDefaults.standard.bool(forKey: Self.reviewModeKey)
-    }
-    
-    /// Enable review mode to unlock all features (for Apple App Store review)
-    @MainActor
-    public func enableReviewMode() {
-        UserDefaults.standard.set(true, forKey: Self.reviewModeKey)
-        purchasedProductIDs.insert(Self.premiumProductID)
-    }
-    
-    /// Disable review mode
-    @MainActor
-    public func disableReviewMode() {
-        UserDefaults.standard.set(false, forKey: Self.reviewModeKey)
-        purchasedProductIDs.remove(Self.premiumProductID)
-    }
-    
-    /// Check and restore review mode on app launch
-    @MainActor
-    public func checkReviewMode() {
-        if isReviewModeEnabled {
-            purchasedProductIDs.insert(Self.premiumProductID)
-        }
-    }
-}
-

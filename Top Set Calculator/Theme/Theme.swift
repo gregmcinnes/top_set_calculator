@@ -6,7 +6,8 @@ enum SBSColors {
     // Fallback colors (used throughout since we don't have asset catalog colors)
     static let backgroundFallback = Color(light: .init(white: 0.96), dark: .init(white: 0.08))
     static let surfaceFallback = Color(light: .white, dark: .init(white: 0.12))
-    static let surfaceElevatedFallback = Color(light: .white, dark: .init(white: 0.16))
+    /// For fields, chips and tiles sitting on top of a surface
+    static let surfaceElevatedFallback = Color(light: .init(white: 0.95), dark: .init(white: 0.16))
     static let accentFallback = Color(light: .init(red: 0.95, green: 0.5, blue: 0.2), dark: .init(red: 1.0, green: 0.6, blue: 0.3))
     static let accentSecondaryFallback = Color(light: .init(red: 0.2, green: 0.4, blue: 0.8), dark: .init(red: 0.4, green: 0.6, blue: 1.0))
     static let textPrimaryFallback = Color(light: .init(white: 0.1), dark: .init(white: 0.95))
@@ -24,56 +25,75 @@ enum SBSColors {
 enum SBSFonts {
     // Large titles
     static func largeTitle() -> Font {
-        .system(size: 34, weight: .bold, design: .rounded)
+        .system(.largeTitle, design: .rounded, weight: .bold)
     }
     
     // Section headers
     static func title() -> Font {
-        .system(size: 22, weight: .bold, design: .rounded)
+        .system(.title2, design: .rounded, weight: .bold)
     }
     
     static func title2() -> Font {
-        .system(size: 20, weight: .semibold, design: .rounded)
+        .system(.title3, design: .rounded, weight: .semibold)
     }
     
     static func title3() -> Font {
-        .system(size: 18, weight: .semibold, design: .rounded)
+        .system(.title3, design: .rounded, weight: .semibold)
     }
     
     // Body text
     static func body() -> Font {
-        .system(size: 17, weight: .regular, design: .default)
+        .system(.body)
     }
     
     static func bodyBold() -> Font {
-        .system(size: 17, weight: .semibold, design: .default)
+        .system(.body, weight: .semibold)
     }
     
     // Weight/number display - monospaced for alignment
     static func weight() -> Font {
-        .system(size: 24, weight: .bold, design: .monospaced)
+        .system(.title2, design: .monospaced, weight: .bold)
     }
     
     static func weightLarge() -> Font {
-        .system(size: 32, weight: .bold, design: .monospaced)
+        .system(.largeTitle, design: .monospaced, weight: .bold)
     }
     
     static func number() -> Font {
-        .system(size: 20, weight: .semibold, design: .monospaced)
+        .system(.title3, design: .monospaced, weight: .semibold)
     }
     
     // Small text
     static func caption() -> Font {
-        .system(size: 13, weight: .medium, design: .default)
+        .system(.footnote, weight: .medium)
     }
     
     static func captionBold() -> Font {
-        .system(size: 13, weight: .semibold, design: .default)
+        .system(.footnote, weight: .semibold)
     }
     
     // Button text
     static func button() -> Font {
-        .system(size: 17, weight: .semibold, design: .rounded)
+        .system(.body, design: .rounded, weight: .semibold)
+    }
+}
+
+/// A big rounded result number that follows Dynamic Type but shrinks to stay on one line
+private struct HeroNumberFont: ViewModifier {
+    let size: CGFloat
+    @ScaledMetric(relativeTo: .largeTitle) private var scale: CGFloat = 1
+    
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: size * scale, weight: .bold, design: .rounded))
+            .lineLimit(1)
+            .minimumScaleFactor(0.4)
+    }
+}
+
+extension View {
+    func heroNumberFont(size: CGFloat = 48) -> some View {
+        modifier(HeroNumberFont(size: size))
     }
 }
 
@@ -189,25 +209,36 @@ extension Color {
 // MARK: - Weight Formatting
 
 extension Double {
-    func formattedWeight(useMetric: Bool = false) -> String {
-        let value = useMetric ? self * 0.453592 : self
-        let unit = useMetric ? "kg" : "lb"
-        
-        if value.truncatingRemainder(dividingBy: 1) == 0 {
-            return "\(Int(value)) \(unit)"
-        } else {
-            return String(format: "%.1f \(unit)", value)
-        }
-    }
-    
-    func formattedWeightShort(useMetric: Bool = false) -> String {
-        let value = useMetric ? self * 0.453592 : self
-        
-        if value.truncatingRemainder(dividingBy: 1) == 0 {
-            return "\(Int(value))"
-        } else {
-            return String(format: "%.1f", value)
-        }
+    /// Formats a weight without unit conversion: "135", "102.5", "1.25".
+    /// Trailing zeros are dropped and the decimal separator follows the locale.
+    func weightString(maxFractionDigits: Int = 2, locale: Locale = .autoupdatingCurrent) -> String {
+        formatted(
+            .number
+                .precision(.fractionLength(0...maxFractionDigits))
+                .grouping(.never)
+                .locale(locale)
+        )
     }
 }
 
+// MARK: - Keyboard
+
+extension View {
+    /// Adds a Done button above the keyboard. Number pads have no return key, so
+    /// without this the only way to dismiss them is to scroll.
+    func keyboardDoneToolbar() -> some View {
+        toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil,
+                        from: nil,
+                        for: nil
+                    )
+                }
+            }
+        }
+    }
+}

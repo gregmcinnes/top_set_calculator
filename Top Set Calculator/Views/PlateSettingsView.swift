@@ -1,14 +1,21 @@
+import StoreKit
 import SwiftUI
 
 // MARK: - Settings View
 
 struct PlateSettingsView: View {
     @Bindable var settings: AppSettings
-    @State private var showingPaywall = false
+    @State private var paywallFeature: PremiumFeature?
+    @State private var restoreMessage: String?
+    @State private var isRestoring = false
+    @State private var newPlateWeight = ""
+    @State private var collarText = ""
+    @State private var showingNewProfile = false
+    @State private var newProfileName = ""
+    @State private var renamingProfile: GymProfile?
+    @State private var renameText = ""
     @State private var showingCustomBarWeight = false
     @State private var customBarWeight: String = ""
-    @State private var reviewModeTapCount = 0
-    @State private var showReviewModeLogin = false
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isBarWeightFocused: Bool
     
@@ -37,30 +44,33 @@ struct PlateSettingsView: View {
     }
     
     private var plates: [Plate] {
-        // Show all plates (including premium) if user has access
-        if canAccessExtendedEquipment {
-            return settings.useMetric ? StandardPlates.allMetricPlates : StandardPlates.allImperialPlates
-        }
-        return settings.useMetric ? StandardPlates.metricPlates : StandardPlates.plates
+        // Show all plates (including premium and custom sizes) if user has access
+        StandardPlates.configurablePlates(with: settings, useMetric: settings.useMetric)
     }
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: SBSLayout.sectionSpacing) {
+                    premiumStatusSection
+                    
                     // General Settings Section
                     generalSettingsSection
                     
-                    // Custom Colors Section
-                    customColorsSection
+                    gymProfilesSection
                     
                     // My Plates Section
                     myPlatesSection
                     
+                    extendedEquipmentSection
+                    
+                    // Custom Colors Section
+                    customColorsSection
+                    
                     // More Apps Section
                     moreAppsSection
                     
-                    // Version Section (with hidden review mode unlock)
+                    // Version Section
                     versionSection
                     
                     Spacer(minLength: 40)
@@ -77,23 +87,336 @@ struct PlateSettingsView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingPaywall) {
-                PaywallView()
-                    .preferredColorScheme(settings.appearanceMode.colorScheme)
+            .keyboardDoneToolbar()
+            .sheet(item: $paywallFeature) { feature in
+                PaywallView(triggeredByFeature: feature)
             }
-            .sheet(isPresented: $showReviewModeLogin) {
-                ReviewModeLoginView()
-                    .preferredColorScheme(settings.appearanceMode.colorScheme)
+            .alert("Restore Purchases", isPresented: Binding(
+                get: { restoreMessage != nil },
+                set: { if !$0 { restoreMessage = nil } }
+            )) {
+                Button("OK") { }
+            } message: {
+                Text(restoreMessage ?? "")
+            }
+            .alert("New Gym", isPresented: $showingNewProfile) {
+                TextField("Name", text: $newProfileName)
+                Button("Add") {
+                    let name = newProfileName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !name.isEmpty {
+                        settings.addGymProfile(named: name)
+                    }
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Starts as a copy of your current setup.")
+            }
+            .alert("Rename Gym", isPresented: Binding(
+                get: { renamingProfile != nil },
+                set: { if !$0 { renamingProfile = nil } }
+            )) {
+                TextField("Name", text: $renameText)
+                Button("Save") {
+                    let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if let renamingProfile, !name.isEmpty {
+                        settings.renameGymProfile(id: renamingProfile.id, to: name)
+                    }
+                }
+                Button("Cancel", role: .cancel) { }
             }
             .preferredColorScheme(settings.appearanceMode.colorScheme)
         }
+    }
+    
+    // MARK: - Premium Status
+    
+    private var premiumStatusSection: some View {
+        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+            if StoreManager.shared.isPremium {
+                HStack(spacing: SBSLayout.paddingSmall) {
+                    Image(systemName: "crown.fill")
+                        .foregroundStyle(SBSColors.accentFallback)
+                    Text("Premium Active")
+                        .font(SBSFonts.bodyBold())
+                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                    Spacer()
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(SBSColors.success)
+                }
+            } else {
+                Button {
+                    paywallFeature = .warmups
+                } label: {
+                    HStack(spacing: SBSLayout.paddingSmall) {
+                        Image(systemName: "crown.fill")
+                            .foregroundStyle(SBSColors.accentFallback)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Unlock Premium")
+                                .font(SBSFonts.bodyBold())
+                                .foregroundStyle(SBSColors.textPrimaryFallback)
+                            Text("One-time purchase, no subscription")
+                                .font(SBSFonts.caption())
+                                .foregroundStyle(SBSColors.textSecondaryFallback)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                    }
+                }
+                .buttonStyle(.plain)
+                
+                Button {
+                    Task { await restorePurchases() }
+                } label: {
+                    Text(isRestoring ? "Restoring…" : "Restore Purchases")
+                        .font(SBSFonts.caption())
+                        .foregroundStyle(SBSColors.accentFallback)
+                }
+                .disabled(isRestoring)
+            }
+        }
+        .padding()
+        .sbsCard()
+        .padding(.horizontal)
+    }
+    
+    private func restorePurchases() async {
+        isRestoring = true
+        defer { isRestoring = false }
+        
+        do {
+            try await StoreManager.shared.restorePurchases()
+            restoreMessage = StoreManager.shared.isPremium
+                ? "Premium has been restored."
+                : "We couldn't find a previous Premium purchase for this Apple Account."
+        } catch StoreKitError.userCancelled {
+            // The user backed out of signing in
+        } catch {
+            restoreMessage = error.localizedDescription
+        }
+    }
+    
+    // MARK: - Gym Profiles
+    
+    private var gymProfilesSection: some View {
+        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+            HStack {
+                Image(systemName: "building.2.fill")
+                    .foregroundStyle(SBSColors.accentFallback)
+                Text("Gym Profiles")
+                    .font(SBSFonts.title3())
+                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                Spacer()
+                if !StoreManager.shared.canAccess(.gymProfiles) {
+                    PremiumBadge()
+                }
+            }
+            
+            if StoreManager.shared.canAccess(.gymProfiles) {
+                Text("Each gym keeps its own units, bar, plates and collars. Changes below apply to the selected gym.")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                
+                ForEach(settings.gymProfiles) { profile in
+                    HStack {
+                        Button {
+                            settings.selectGymProfile(id: profile.id)
+                        } label: {
+                            HStack {
+                                Image(systemName: profile.id == settings.activeGymProfileID ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(profile.id == settings.activeGymProfileID ? SBSColors.accentFallback : SBSColors.textTertiaryFallback)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(profile.name)
+                                        .font(SBSFonts.bodyBold())
+                                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                                    Text("\(profile.barWeight.weightString()) \(profile.useMetric ? "kg" : "lb") bar")
+                                        .font(SBSFonts.caption())
+                                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                                }
+                                Spacer()
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        
+                        Menu {
+                            Button("Rename") {
+                                renameText = profile.name
+                                renamingProfile = profile
+                            }
+                            if settings.gymProfiles.count > 1 {
+                                Button("Delete", role: .destructive) {
+                                    settings.deleteGymProfile(id: profile.id)
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .foregroundStyle(SBSColors.textSecondaryFallback)
+                                .frame(minWidth: 44, minHeight: 44)
+                        }
+                        .accessibilityLabel("Options for \(profile.name)")
+                    }
+                }
+                
+                Button {
+                    newProfileName = ""
+                    showingNewProfile = true
+                } label: {
+                    Label("Add Gym", systemImage: "plus")
+                        .font(SBSFonts.captionBold())
+                        .foregroundStyle(SBSColors.accentFallback)
+                }
+            } else {
+                lockedFeatureCard(
+                    description: "Switch between home, commercial and meet setups",
+                    feature: .gymProfiles
+                )
+            }
+        }
+        .padding()
+        .sbsCard()
+        .padding(.horizontal)
+    }
+    
+    // MARK: - Extended Equipment
+    
+    private var extendedEquipmentSection: some View {
+        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+            HStack {
+                Image(systemName: "dumbbell.fill")
+                    .foregroundStyle(SBSColors.accentFallback)
+                Text("Extended Equipment")
+                    .font(SBSFonts.title3())
+                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                Spacer()
+                if !canAccessExtendedEquipment {
+                    PremiumBadge()
+                }
+            }
+            
+            if canAccessExtendedEquipment {
+                if !settings.useMetric {
+                    Toggle(isOn: $settings.use55LbPlates) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Use 55 lb Plates")
+                                .font(SBSFonts.bodyBold())
+                            Text("Loads 55s first. Most gyms top out at 45s.")
+                                .font(SBSFonts.caption())
+                                .foregroundStyle(SBSColors.textSecondaryFallback)
+                        }
+                    }
+                    .tint(SBSColors.accentFallback)
+                    .disabled(settings.useMyPlates)
+                    
+                    if settings.useMyPlates {
+                        Text("My Plates is on, so your 55 lb count decides this.")
+                            .font(SBSFonts.caption())
+                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                    }
+                    
+                    Divider()
+                }
+                
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Collars")
+                            .font(SBSFonts.bodyBold())
+                            .foregroundStyle(SBSColors.textPrimaryFallback)
+                        Text("Weight of one collar, counted on both sides")
+                            .font(SBSFonts.caption())
+                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                    }
+                    
+                    Spacer()
+                    
+                    // Local text so a half-typed "2." isn't rewritten as "2" mid-keystroke
+                    TextField("0", text: $collarText)
+                    .onAppear(perform: refreshCollarText)
+                    .onChange(of: collarText) { _, newValue in
+                        settings.collarWeight = WeightInput.parse(newValue, maximum: 100) ?? 0
+                    }
+                    .onChange(of: settings.activeGymProfileID) { _, _ in refreshCollarText() }
+                    .onChange(of: settings.useMetric) { _, _ in refreshCollarText() }
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 70)
+                    .padding(8)
+                    .background(SBSColors.surfaceElevatedFallback)
+                    .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                    .accessibilityLabel("Collar weight")
+                    
+                    Text(settings.unitLabel)
+                        .font(SBSFonts.caption())
+                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                }
+                
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Custom Plate Sizes")
+                        .font(SBSFonts.bodyBold())
+                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                    
+                    ForEach(settings.customPlateWeights(useMetric: settings.useMetric).sorted(by: >), id: \.self) { weight in
+                        HStack {
+                            Text("\(weight.weightString()) \(settings.unitLabel)")
+                                .font(SBSFonts.body())
+                                .foregroundStyle(SBSColors.textPrimaryFallback)
+                            Spacer()
+                            Button {
+                                settings.removeCustomPlate(weight: weight)
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundStyle(SBSColors.error)
+                                    .frame(minWidth: 44, minHeight: 44)
+                            }
+                            .accessibilityLabel("Remove \(weight.weightString()) \(settings.unitLabel) plate")
+                        }
+                    }
+                    
+                    HStack {
+                        TextField(settings.useMetric ? "e.g. 0.25" : "e.g. 15", text: $newPlateWeight)
+                            .keyboardType(.decimalPad)
+                            .padding(8)
+                            .background(SBSColors.surfaceElevatedFallback)
+                            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                            .accessibilityLabel("New plate size")
+                        
+                        Text(settings.unitLabel)
+                            .font(SBSFonts.caption())
+                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                        
+                        Button("Add") {
+                            if let weight = WeightInput.parse(newPlateWeight, maximum: 200), settings.addCustomPlate(weight: weight) {
+                                newPlateWeight = ""
+                            }
+                        }
+                        .font(SBSFonts.captionBold())
+                        .foregroundStyle(SBSColors.accentFallback)
+                        .disabled(WeightInput.parse(newPlateWeight, maximum: 200) == nil)
+                    }
+                }
+            } else {
+                lockedFeatureCard(
+                    description: "Custom plate sizes, collars, custom bars, and \(settings.useMetric ? "0.5 kg plates" : "55 lb & 1.25 lb plates")",
+                    feature: .extendedEquipment
+                )
+            }
+        }
+        .padding()
+        .sbsCard()
+        .padding(.horizontal)
+    }
+    
+    private func refreshCollarText() {
+        collarText = settings.collarWeight > 0 ? settings.collarWeight.weightString() : ""
     }
     
     // MARK: - Version Section
     
     private var versionSection: some View {
         VStack(spacing: SBSLayout.paddingSmall) {
-            // Version info with hidden unlock gesture
             Text("Top Set Calculator")
                 .font(SBSFonts.caption())
                 .foregroundStyle(SBSColors.textTertiaryFallback)
@@ -101,29 +424,6 @@ struct PlateSettingsView: View {
             Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
                 .font(SBSFonts.caption())
                 .foregroundStyle(SBSColors.textTertiaryFallback)
-                .onTapGesture {
-                    // Hidden gesture for App Store reviewers - tap version 7 times
-                    reviewModeTapCount += 1
-                    if reviewModeTapCount >= 7 {
-                        showReviewModeLogin = true
-                        reviewModeTapCount = 0
-                    }
-                    
-                    // Reset count after 3 seconds of no taps
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                        if reviewModeTapCount < 7 {
-                            reviewModeTapCount = 0
-                        }
-                    }
-                }
-            
-            // Show review mode status if enabled
-            if StoreManager.shared.isReviewModeEnabled {
-                Text("Review Mode Active")
-                    .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.success)
-                    .padding(.top, 4)
-            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, SBSLayout.paddingLarge)
@@ -213,6 +513,51 @@ struct PlateSettingsView: View {
             Divider()
                 .background(SBSColors.textTertiaryFallback.opacity(0.2))
             
+            // Rounding
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Round Weights To")
+                            .font(SBSFonts.bodyBold())
+                            .foregroundStyle(SBSColors.textPrimaryFallback)
+                        Text("For suggested training weights")
+                            .font(SBSFonts.caption())
+                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                    }
+                    
+                    Spacer()
+                    
+                    Menu {
+                        Picker("Round Weights To", selection: Binding(
+                            get: { settings.roundingIncrement },
+                            set: { settings.roundingIncrement = $0 }
+                        )) {
+                            ForEach(WeightRounding.options(useMetric: settings.useMetric), id: \.self) { option in
+                                Text(roundingLabel(option)).tag(option)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(roundingLabel(settings.roundingIncrement))
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption2)
+                        }
+                        .foregroundStyle(SBSColors.accentFallback)
+                    }
+                }
+                
+                if let step = settings.smallestLoadStep, settings.roundingIncrement > 0,
+                   (settings.roundingIncrement / step).rounded() != settings.roundingIncrement / step {
+                    Text("Your plates load in \(step.weightString()) \(settings.unitLabel) steps, so some rounded weights won't be exact on the bar.")
+                        .font(SBSFonts.caption())
+                        .foregroundStyle(SBSColors.warning)
+                }
+            }
+            .padding(.vertical, 4)
+            
+            Divider()
+                .background(SBSColors.textTertiaryFallback.opacity(0.2))
+            
             // Bar Weight
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -234,7 +579,7 @@ struct PlateSettingsView: View {
                                     settings.barWeight = weight
                                 } label: {
                                     HStack {
-                                        Text("\(Int(weight)) \(settings.useMetric ? "kg" : "lb")")
+                                        Text("\(weight.weightString()) \(settings.useMetric ? "kg" : "lb")")
                                         if settings.barWeight == weight {
                                             Image(systemName: "checkmark")
                                         }
@@ -245,7 +590,7 @@ struct PlateSettingsView: View {
                             if canAccessExtendedEquipment {
                                 Divider()
                                 Button {
-                                    customBarWeight = String(format: "%.0f", settings.barWeight)
+                                    customBarWeight = settings.barWeight.weightString()
                                     showingCustomBarWeight = true
                                     isBarWeightFocused = true
                                 } label: {
@@ -258,9 +603,9 @@ struct PlateSettingsView: View {
                         } label: {
                             HStack(spacing: 4) {
                                 if isCustomBarWeight {
-                                    Text("Custom: \(Int(settings.barWeight)) \(settings.useMetric ? "kg" : "lb")")
+                                    Text("Custom: \(settings.barWeight.weightString()) \(settings.useMetric ? "kg" : "lb")")
                                 } else {
-                                    Text("\(Int(settings.barWeight)) \(settings.useMetric ? "kg" : "lb")")
+                                    Text("\(settings.barWeight.weightString()) \(settings.useMetric ? "kg" : "lb")")
                                 }
                                 Image(systemName: "chevron.up.chevron.down")
                                     .font(.system(size: 10))
@@ -279,11 +624,11 @@ struct PlateSettingsView: View {
                             .textFieldStyle(.plain)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 10)
-                            .background(SBSColors.surfaceFallback)
+                            .background(SBSColors.surfaceElevatedFallback)
                             .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
                             .focused($isBarWeightFocused)
                             .onChange(of: customBarWeight) { _, newValue in
-                                if let weight = Double(newValue), weight > 0 {
+                                if let weight = WeightInput.parse(newValue, maximum: PlateCalculator.maximumTotalWeight) {
                                     settings.barWeight = weight
                                 }
                             }
@@ -308,6 +653,10 @@ struct PlateSettingsView: View {
         .padding()
         .sbsCard()
         .padding(.horizontal)
+    }
+    
+    private func roundingLabel(_ increment: Double) -> String {
+        increment > 0 ? "\(increment.weightString()) \(settings.unitLabel)" : "Off"
     }
     
     // MARK: - Custom Colors Section
@@ -345,7 +694,7 @@ struct PlateSettingsView: View {
                     .padding(.top, 8)
                     
                     Button {
-                        settings.customPlateColors = [:]
+                        settings.resetPlateColors()
                     } label: {
                         Text("Reset to Default Colors")
                             .font(SBSFonts.caption())
@@ -404,20 +753,7 @@ struct PlateSettingsView: View {
                     .padding(.top, 8)
                     
                     Button {
-                        // Reset to default quantities (including premium plates if accessible)
-                        if settings.useMetric {
-                            if canAccessExtendedEquipment {
-                                settings.myPlates = [25: 4, 20: 4, 15: 2, 10: 2, 5: 2, 2.5: 2, 1.25: 2, 0.5: 2]
-                            } else {
-                                settings.myPlates = [25: 4, 20: 4, 15: 2, 10: 2, 5: 2, 2.5: 2, 1.25: 2]
-                            }
-                        } else {
-                            if canAccessExtendedEquipment {
-                                settings.myPlates = [55: 2, 45: 4, 35: 2, 25: 2, 10: 2, 5: 2, 2.5: 2, 1.25: 2]
-                            } else {
-                                settings.myPlates = [45: 4, 35: 2, 25: 2, 10: 2, 5: 2, 2.5: 2]
-                            }
-                        }
+                        settings.resetPlateInventory()
                     } label: {
                         Text("Reset to Default Quantities")
                             .font(SBSFonts.caption())
@@ -519,21 +855,7 @@ struct PlateSettingsView: View {
     // MARK: - Helper Views
     
     private var premiumBadge: some View {
-        Text("PRO")
-            .font(.system(size: 9, weight: .bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [SBSColors.accentFallback, SBSColors.accentSecondaryFallback],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-            )
+        PremiumBadge()
     }
     
     private func lockedFeatureCard(description: String, feature: PremiumFeature) -> some View {
@@ -547,7 +869,7 @@ struct PlateSettingsView: View {
             }
             
             Button {
-                showingPaywall = true
+                paywallFeature = feature
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "crown.fill")
@@ -588,22 +910,22 @@ struct PlateColorRow: View {
     var settings: AppSettings
     let useMetric: Bool
     
-    @State private var selectedColor: Color
+    private var color: Color {
+        settings.plateColor(for: plate.weight, defaultColor: plate.color)
+    }
     
-    init(plate: Plate, settings: AppSettings, useMetric: Bool) {
-        self.plate = plate
-        self.settings = settings
-        self.useMetric = useMetric
-        
-        // Initialize with current color (plate.color already has the correct default)
-        _selectedColor = State(initialValue: settings.plateColor(for: plate.weight, defaultColor: plate.color))
+    private var colorBinding: Binding<Color> {
+        Binding(
+            get: { color },
+            set: { settings.setPlateColor($0, for: plate.weight) }
+        )
     }
     
     var body: some View {
         HStack(spacing: SBSLayout.paddingMedium) {
             // Plate preview
             RoundedRectangle(cornerRadius: 3)
-                .fill(selectedColor)
+                .fill(color)
                 .frame(width: 20, height: 32)
                 .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
             
@@ -619,11 +941,8 @@ struct PlateColorRow: View {
             Spacer()
             
             // Color picker
-            ColorPicker("", selection: $selectedColor, supportsOpacity: false)
+            ColorPicker("", selection: colorBinding, supportsOpacity: false)
                 .labelsHidden()
-                .onChange(of: selectedColor) { _, newColor in
-                    settings.setPlateColor(newColor, for: plate.weight)
-                }
         }
         .padding(.vertical, 4)
     }
@@ -636,15 +955,17 @@ struct PlateInventoryRow: View {
     var settings: AppSettings
     let useMetric: Bool
     
+    private let maximumCount = 10
+    
     private var count: Int {
-        settings.myPlates[plate.weight] ?? 0
+        settings.plateCount(for: plate.weight)
     }
     
     var body: some View {
         HStack(spacing: SBSLayout.paddingMedium) {
             // Plate preview
             RoundedRectangle(cornerRadius: 3)
-                .fill(plate.color)
+                .fill(settings.plateColor(for: plate.weight, defaultColor: plate.color))
                 .frame(width: 20, height: 32)
                 .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
             
@@ -664,14 +985,14 @@ struct PlateInventoryRow: View {
             // Stepper
             HStack(spacing: 12) {
                 Button {
-                    let newCount = max(0, count - 1)
-                    settings.myPlates[plate.weight] = newCount
+                    settings.setPlateCount(max(0, count - 1), for: plate.weight)
                 } label: {
                     Image(systemName: "minus.circle.fill")
                         .font(.system(size: 24))
                         .foregroundStyle(count > 0 ? SBSColors.accentFallback : SBSColors.textTertiaryFallback)
                 }
                 .disabled(count == 0)
+                .accessibilityLabel("Remove \(plate.displayWeight) \(useMetric ? "kg" : "lb") plate")
                 
                 Text("\(count)")
                     .font(SBSFonts.number())
@@ -679,169 +1000,18 @@ struct PlateInventoryRow: View {
                     .frame(minWidth: 30)
                 
                 Button {
-                    let newCount = min(10, count + 1)
-                    settings.myPlates[plate.weight] = newCount
+                    settings.setPlateCount(min(maximumCount, count + 1), for: plate.weight)
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(SBSColors.accentFallback)
+                        .foregroundStyle(count < maximumCount ? SBSColors.accentFallback : SBSColors.textTertiaryFallback)
                 }
+                .disabled(count >= maximumCount)
+                .accessibilityLabel("Add \(plate.displayWeight) \(useMetric ? "kg" : "lb") plate")
             }
         }
         .padding(.vertical, 4)
-    }
-}
-
-// MARK: - Review Mode Login View
-
-struct ReviewModeLoginView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var username = ""
-    @State private var password = ""
-    @State private var showError = false
-    @State private var isAuthenticating = false
-    @FocusState private var focusedField: Field?
-    
-    enum Field {
-        case username, password
-    }
-    
-    // Review credentials - share these with Apple in App Store Connect
-    // You can change these to whatever you prefer
-    private static let reviewUsername = "app_review"
-    private static let reviewPassword = "TopSet2026!"
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: SBSLayout.sectionSpacing) {
-                Spacer()
-                
-                // Lock icon
-                ZStack {
-                    Circle()
-                        .fill(SBSColors.accentFallback.opacity(0.1))
-                        .frame(width: 80, height: 80)
-                    
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 36))
-                        .foregroundStyle(SBSColors.accentFallback)
-                }
-                
-                Text("Authorized Access Only")
-                    .font(SBSFonts.title2())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
-                
-                Text("Enter your credentials to continue")
-                    .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
-                
-                // Login form
-                VStack(spacing: SBSLayout.paddingMedium) {
-                    // Username field
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Username")
-                            .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
-                        
-                        TextField("Username", text: $username)
-                            .textContentType(.username)
-                            .autocapitalization(.none)
-                            .autocorrectionDisabled()
-                            .focused($focusedField, equals: .username)
-                            .padding()
-                            .background(SBSColors.surfaceFallback)
-                            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
-                    }
-                    
-                    // Password field
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Password")
-                            .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
-                        
-                        SecureField("Password", text: $password)
-                            .textContentType(.password)
-                            .focused($focusedField, equals: .password)
-                            .padding()
-                            .background(SBSColors.surfaceFallback)
-                            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
-                    }
-                    
-                    // Error message
-                    if showError {
-                        Text("Invalid credentials")
-                            .font(SBSFonts.caption())
-                            .foregroundStyle(.red)
-                    }
-                    
-                    // Login button
-                    Button {
-                        authenticate()
-                    } label: {
-                        HStack {
-                            if isAuthenticating {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Text("Sign In")
-                            }
-                        }
-                        .font(SBSFonts.button())
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, SBSLayout.paddingMedium)
-                        .background(SBSColors.accentFallback)
-                        .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
-                    }
-                    .disabled(username.isEmpty || password.isEmpty || isAuthenticating)
-                    .opacity(username.isEmpty || password.isEmpty ? 0.6 : 1)
-                }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                        .fill(SBSColors.surfaceFallback.opacity(0.5))
-                )
-                .padding(.horizontal)
-                
-                Spacer()
-                Spacer()
-            }
-            .sbsBackground()
-            .navigationTitle("Sign In")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-            }
-            .onAppear {
-                focusedField = .username
-            }
-        }
-    }
-    
-    private func authenticate() {
-        showError = false
-        isAuthenticating = true
-        
-        // Small delay to feel more like a real auth check
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            isAuthenticating = false
-            
-            if username.lowercased() == Self.reviewUsername.lowercased() && 
-               password == Self.reviewPassword {
-                // Success - enable review mode
-                Task { @MainActor in
-                    StoreManager.shared.enableReviewMode()
-                }
-                dismiss()
-            } else {
-                showError = true
-                password = ""
-            }
-        }
+        .sensoryFeedback(.selection, trigger: count)
     }
 }
 
@@ -849,9 +1019,5 @@ struct ReviewModeLoginView: View {
 
 #Preview("Plate Settings") {
     PlateSettingsView(settings: AppSettings())
-}
-
-#Preview("Review Mode Login") {
-    ReviewModeLoginView()
 }
 
