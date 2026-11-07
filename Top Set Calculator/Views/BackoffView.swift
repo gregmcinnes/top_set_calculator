@@ -46,7 +46,8 @@ struct BackoffView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: SBSLayout.sectionSpacing) {
+            VStack(spacing: SBSLayout.space6) {
+                ScreenTitle("Back-off Sets")
                 topSetSection
                 backoffSection
                 
@@ -61,8 +62,7 @@ struct BackoffView: View {
         .scrollDismissesKeyboard(.interactively)
         .keyboardDoneToolbar()
         .sbsBackground()
-        .navigationTitle("Back-off Sets")
-        .navigationBarTitleDisplayMode(.inline)
+        .screenNavigation("Back-off Sets")
         .recordsCalculation(key: backoffWeight.map { "\($0)-\(setCount)" })
         .onAppear {
             if let initialTopSet, !didApplyInitial {
@@ -73,10 +73,10 @@ struct BackoffView: View {
     }
     
     private var topSetSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             Text("Today's Top Set")
-                .font(SBSFonts.title3())
-                .foregroundStyle(SBSColors.textPrimaryFallback)
+                .font(SBSFonts.heading())
+                .foregroundStyle(Color.ink)
             
             WeightField(label: "Weight", text: $topSet, unit: settings.unitLabel)
             
@@ -89,15 +89,15 @@ struct BackoffView: View {
             }
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
     private var backoffSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             Text("Back-off Sets")
-                .font(SBSFonts.title3())
-                .foregroundStyle(SBSColors.textPrimaryFallback)
+                .font(SBSFonts.heading())
+                .foregroundStyle(Color.ink)
             
             Picker("Method", selection: $modeRaw) {
                 ForEach(Mode.allCases) { mode in
@@ -125,7 +125,7 @@ struct BackoffView: View {
             }
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
@@ -133,29 +133,24 @@ struct BackoffView: View {
         let load = settings.rounded(weight)
         let calculator = PlateCalculator(barWeight: settings.barWeight, settings: settings)
         
-        return VStack(spacing: SBSLayout.paddingMedium) {
+        return VStack(spacing: SBSLayout.space4) {
             VStack(spacing: 8) {
                 Text("Back-off Weight")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 
-                Text(settings.loadString(weight))
-                    .heroNumberFont()
-                    .foregroundStyle(SBSColors.accentFallback)
+                HeroNumber(value: settings.loadString(weight), style: .workingWeight)
                 
                 Text("\(setCount) × \(backoffReps), \(Int(((1 - load / top) * 100).rounded()))% below your top set")
-                    .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .font(SBSFonts.numberSmall())
+                    .foregroundStyle(Color.inkSecondary)
                     .multilineTextAlignment(.center)
                 
                 PlateLoadText(result: calculator.calculate(totalWeight: load))
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, SBSLayout.paddingLarge)
-            .background(
-                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                    .fill(SBSColors.accentFallback.opacity(0.1))
-            )
+            .padding(.vertical, SBSLayout.space6)
+            .signatureCard()
             
             ResultActions {
                 ResultLink(title: "Load this weight", icon: "circle.grid.2x1.fill", route: .plate(weight: load))
@@ -169,7 +164,7 @@ struct BackoffView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
+                .foregroundStyle(Color.inkSecondary)
             content()
         }
     }

@@ -43,26 +43,26 @@ enum StandardPlates {
     // Default plate colors - keyed by (weight, isMetric) combination
     // For imperial (lbs)
     static let defaultColorsImperial: [Double: Color] = [
-        55: Color(red: 0.85, green: 0.2, blue: 0.2),     // Red - 55lb (premium)
-        45: Color(red: 0.2, green: 0.4, blue: 0.8),      // Blue
-        35: Color(red: 0.9, green: 0.75, blue: 0.1),     // Yellow
-        25: Color(red: 0.2, green: 0.7, blue: 0.3),      // Green
-        10: Color(red: 0.95, green: 0.95, blue: 0.95),   // White
-        5: Color(red: 0.85, green: 0.2, blue: 0.2),      // Red
-        2.5: Color(red: 0.6, green: 0.6, blue: 0.65),    // Silver
-        1.25: Color(red: 0.4, green: 0.4, blue: 0.45),   // Dark silver - 1.25lb (premium)
+        55: PlateColor.red,     // Red - 55lb (premium)
+        45: PlateColor.blue,      // Blue
+        35: PlateColor.yellow,     // Yellow
+        25: PlateColor.green,      // Green
+        10: PlateColor.white,   // White
+        5: PlateColor.red,      // Red
+        2.5: PlateColor.silver,    // Silver
+        1.25: PlateColor.silver,   // Silver - 1.25lb (premium)
     ]
     
     // For metric (kg) - actual kg values
     static let defaultColorsMetric: [Double: Color] = [
-        25: Color(red: 0.85, green: 0.2, blue: 0.2),     // Red - 25kg
-        20: Color(red: 0.2, green: 0.4, blue: 0.8),      // Blue - 20kg
-        15: Color(red: 0.9, green: 0.75, blue: 0.1),     // Yellow - 15kg
-        10: Color(red: 0.2, green: 0.7, blue: 0.3),      // Green - 10kg
-        5: Color(red: 0.95, green: 0.95, blue: 0.95),    // White - 5kg
-        2.5: Color(red: 0.85, green: 0.2, blue: 0.2),    // Red small - 2.5kg
-        1.25: Color(red: 0.6, green: 0.6, blue: 0.65),   // Silver - 1.25kg
-        0.5: Color(red: 0.4, green: 0.4, blue: 0.45),    // Dark silver - 0.5kg (premium)
+        25: PlateColor.red,     // Red - 25kg
+        20: PlateColor.blue,      // Blue - 20kg
+        15: PlateColor.yellow,     // Yellow - 15kg
+        10: PlateColor.green,      // Green - 10kg
+        5: PlateColor.white,    // White - 5kg
+        2.5: PlateColor.red,    // Red small - 2.5kg
+        1.25: PlateColor.silver,   // Silver - 1.25kg
+        0.5: PlateColor.silver,    // Silver - 0.5kg (premium)
     ]
     
     static func defaultColor(for weight: Double, isMetric: Bool) -> Color? {
@@ -76,14 +76,14 @@ enum StandardPlates {
     // Olympic plates in lbs with competition-inspired colors
     // Includes premium plates (55 lb, 1.25 lb) - filtered based on access
     static let allImperialPlates: [Plate] = [
-        Plate(weight: 55, isMetric: false, color: Color(red: 0.85, green: 0.2, blue: 0.2), height: 1.0),     // Red - 55lb (premium)
-        Plate(weight: 45, isMetric: false, color: Color(red: 0.2, green: 0.4, blue: 0.8), height: 0.95),     // Blue - 45lb
-        Plate(weight: 35, isMetric: false, color: Color(red: 0.9, green: 0.75, blue: 0.1), height: 0.85),    // Yellow - 35lb
-        Plate(weight: 25, isMetric: false, color: Color(red: 0.2, green: 0.7, blue: 0.3), height: 0.75),     // Green - 25lb
-        Plate(weight: 10, isMetric: false, color: Color(red: 0.95, green: 0.95, blue: 0.95), height: 0.55),  // White - 10lb
-        Plate(weight: 5, isMetric: false, color: Color(red: 0.85, green: 0.2, blue: 0.2), height: 0.45),     // Red - 5lb
-        Plate(weight: 2.5, isMetric: false, color: Color(red: 0.6, green: 0.6, blue: 0.65), height: 0.35),   // Silver - 2.5lb
-        Plate(weight: 1.25, isMetric: false, color: Color(red: 0.4, green: 0.4, blue: 0.45), height: 0.3),   // Dark silver - 1.25lb (premium)
+        Plate(weight: 55, isMetric: false, color: PlateColor.red, height: 1.0),     // Red - 55lb (premium)
+        Plate(weight: 45, isMetric: false, color: PlateColor.blue, height: 1.0),     // Blue - 45lb
+        Plate(weight: 35, isMetric: false, color: PlateColor.yellow, height: 0.9),    // Yellow - 35lb
+        Plate(weight: 25, isMetric: false, color: PlateColor.green, height: 0.8),     // Green - 25lb
+        Plate(weight: 10, isMetric: false, color: PlateColor.white, height: 0.6),  // White - 10lb
+        Plate(weight: 5, isMetric: false, color: PlateColor.red, height: 0.5),     // Red - 5lb
+        Plate(weight: 2.5, isMetric: false, color: PlateColor.silver, height: 0.4),   // Silver - 2.5lb
+        Plate(weight: 1.25, isMetric: false, color: PlateColor.silver, height: 0.4),   // Silver - 1.25lb (premium)
     ]
     
     // Standard plates (free tier) - excludes premium plates
@@ -94,14 +94,14 @@ enum StandardPlates {
     // Metric plates (kg) with competition colors - stored in actual kg values
     // Includes premium plates (0.5 kg) - filtered based on access
     static let allMetricPlates: [Plate] = [
-        Plate(weight: 25, isMetric: true, color: Color(red: 0.85, green: 0.2, blue: 0.2), height: 1.0),     // Red - 25kg
-        Plate(weight: 20, isMetric: true, color: Color(red: 0.2, green: 0.4, blue: 0.8), height: 0.95),     // Blue - 20kg
-        Plate(weight: 15, isMetric: true, color: Color(red: 0.9, green: 0.75, blue: 0.1), height: 0.85),    // Yellow - 15kg
-        Plate(weight: 10, isMetric: true, color: Color(red: 0.2, green: 0.7, blue: 0.3), height: 0.75),     // Green - 10kg
-        Plate(weight: 5, isMetric: true, color: Color(red: 0.95, green: 0.95, blue: 0.95), height: 0.6),    // White - 5kg
-        Plate(weight: 2.5, isMetric: true, color: Color(red: 0.85, green: 0.2, blue: 0.2), height: 0.5),    // Red small - 2.5kg
-        Plate(weight: 1.25, isMetric: true, color: Color(red: 0.6, green: 0.6, blue: 0.65), height: 0.4),   // Silver - 1.25kg
-        Plate(weight: 0.5, isMetric: true, color: Color(red: 0.4, green: 0.4, blue: 0.45), height: 0.3),    // Dark silver - 0.5kg (premium)
+        Plate(weight: 25, isMetric: true, color: PlateColor.red, height: 1.0),     // Red - 25kg
+        Plate(weight: 20, isMetric: true, color: PlateColor.blue, height: 0.95),     // Blue - 20kg
+        Plate(weight: 15, isMetric: true, color: PlateColor.yellow, height: 0.9),    // Yellow - 15kg
+        Plate(weight: 10, isMetric: true, color: PlateColor.green, height: 0.8),     // Green - 10kg
+        Plate(weight: 5, isMetric: true, color: PlateColor.white, height: 0.6),    // White - 5kg
+        Plate(weight: 2.5, isMetric: true, color: PlateColor.red, height: 0.5),    // Red small - 2.5kg
+        Plate(weight: 1.25, isMetric: true, color: PlateColor.silver, height: 0.4),   // Silver - 1.25kg
+        Plate(weight: 0.5, isMetric: true, color: PlateColor.silver, height: 0.4),    // Silver - 0.5kg (premium)
     ]
     
     // Standard plates (free tier) - excludes premium plates
@@ -130,7 +130,7 @@ enum StandardPlates {
             let fraction = (weight - lower.weight) / (upper.weight - lower.weight)
             height = lower.height + (upper.height - lower.height) * fraction
         }
-        return Plate(weight: weight, isMetric: isMetric, color: Color(white: 0.3), height: height)
+        return Plate(weight: weight, isMetric: isMetric, color: PlateColor.silver, height: height)
     }
     
     /// Get plates with custom colors applied and premium plates included if accessible
@@ -381,6 +381,8 @@ struct BarbellView: View {
     private let barHeight: CGFloat = 12
     private let sleeveHeight: CGFloat = 20
     private let collarWidth: CGFloat = 8
+    /// How far the sleeve runs past the outermost plate
+    private let startInset: CGFloat = 16
     
     var body: some View {
         VStack(spacing: compact ? 4 : 8) {
@@ -392,7 +394,7 @@ struct BarbellView: View {
                 weightBreakdown
             }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: loadedPlates.map(\.weight))
+        .animation(.spring(response: 0.4, dampingFraction: 0.9), value: loadedPlates.map(\.weight))
     }
     
     private var barbellGraphic: some View {
@@ -447,54 +449,37 @@ struct BarbellView: View {
     }
     
     private func barGraphic(centerY: CGFloat, width: CGFloat) -> some View {
-        ZStack {
-            // Main bar
-            RoundedRectangle(cornerRadius: 2)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(white: 0.75),
-                            Color(white: 0.85),
-                            Color(white: 0.7)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: width - 32, height: barHeight)
-                .position(x: width / 2, y: centerY)
-            
-            // Knurling pattern (subtle texture in center)
-            RoundedRectangle(cornerRadius: 1)
-                .fill(Color(white: 0.65).opacity(0.5))
-                .frame(width: 60, height: barHeight - 2)
-                .position(x: width / 2, y: centerY)
-        }
+        Rectangle()
+            .fill(Color.bar)
+            .frame(width: width, height: barHeight)
+            .position(x: width / 2, y: centerY)
     }
     
     private func platesGraphic(centerY: CGFloat, startX: CGFloat, plates: [Plate], plateWidth: CGFloat, mirrored: Bool) -> some View {
         // Left side (mirrored=false): plates go RIGHT (positive x) toward center, so direction = 1
         // Right side (mirrored=true): plates go LEFT (negative x) toward center, so direction = -1
         let direction: CGFloat = mirrored ? -1 : 1
-        let baseX = startX + (direction * collarWidth / 2)
+        let baseX = startX
         
         return ZStack {
-            // Collar
-            RoundedRectangle(cornerRadius: 2)
-                .fill(
-                    LinearGradient(
-                        colors: [Color(white: 0.5), Color(white: 0.65), Color(white: 0.5)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: collarWidth, height: sleeveHeight)
-                .position(x: startX, y: centerY)
+            // Sleeve, from the end of the bar to the collar
+            let stackWidth = CGFloat(plates.count) * (plateWidth + plateSpacing)
+            let sleeveLength = max(36, startInset + stackWidth + collarWidth / 2)
+            Rectangle()
+                .fill(Color.bar)
+                .frame(width: sleeveLength, height: sleeveHeight)
+                .position(x: startX + direction * (sleeveLength / 2 - startInset), y: centerY)
+
+            // Collar, on the inside of the plates so the heaviest sits against it
+            Rectangle()
+                .fill(Color.ink)
+                .frame(width: collarWidth, height: sleeveHeight + 8)
+                .position(x: baseX + direction * (stackWidth + collarWidth / 2), y: centerY)
             
             // Plates
             ForEach(Array(plates.enumerated()), id: \.offset) { index, plate in
                 let plateHeight = plate.height * (compact ? maxPlateHeight * 0.7 : maxPlateHeight)
-                let xPos = baseX + (direction * (plateWidth / 2 + plateSpacing + CGFloat(index) * (plateWidth + plateSpacing)))
+                let xPos = baseX + (direction * (plateWidth / 2 + CGFloat(index) * (plateWidth + plateSpacing)))
                 
                 PlateView(
                     plate: plate,
@@ -504,7 +489,7 @@ struct BarbellView: View {
                     useMetric: useMetric
                 )
                 .position(x: xPos, y: centerY)
-                .transition(.scale.combined(with: .opacity))
+                .transition(.move(edge: mirrored ? .trailing : .leading).combined(with: .opacity))
             }
         }
     }
@@ -515,50 +500,50 @@ struct BarbellView: View {
             VStack(spacing: 2) {
                 Text("Bar")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 Text(formatWeight(barWeight))
-                    .font(SBSFonts.captionBold())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .font(SBSFonts.numberSmall())
+                    .foregroundStyle(Color.inkSecondary)
             }
             
             if calculator.collarWeight > 0 {
                 Text("+")
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 
                 VStack(spacing: 2) {
                     Text("Collars")
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textTertiaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                     Text(formatWeight(calculator.collarWeight * 2))
-                        .font(SBSFonts.captionBold())
-                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                        .font(SBSFonts.numberSmall())
+                        .foregroundStyle(Color.inkSecondary)
                 }
             }
             
             Text("+")
-                .foregroundStyle(SBSColors.textTertiaryFallback)
+                .foregroundStyle(Color.inkSecondary)
             
             // Per side
             VStack(spacing: 2) {
                 Text("Each side")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 Text(formatWeight(result.weightPerSide))
-                    .font(SBSFonts.captionBold())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .font(SBSFonts.numberSmall())
+                    .foregroundStyle(Color.inkSecondary)
             }
             
             Text("=")
-                .foregroundStyle(SBSColors.textTertiaryFallback)
+                .foregroundStyle(Color.inkSecondary)
             
             // Total
             VStack(spacing: 2) {
                 Text("Total")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 Text(formatWeight(weight))
-                    .font(SBSFonts.captionBold())
-                    .foregroundStyle(SBSColors.accentFallback)
+                    .font(SBSFonts.numberSmall())
+                    .foregroundStyle(Color.ink)
             }
         }
     }
@@ -577,38 +562,57 @@ struct PlateView: View {
     let width: CGFloat
     var showLabel: Bool = true
     var useMetric: Bool = false
-    
+
     var body: some View {
-        ZStack {
-            // Plate body with 3D effect
-            RoundedRectangle(cornerRadius: 3)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            plate.color.opacity(0.7),
-                            plate.color,
-                            plate.color.opacity(0.8)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .frame(width: width, height: height)
-                .shadow(color: .black.opacity(0.3), radius: 1, x: 1, y: 0)
-            
-            // Inner ring detail
-            RoundedRectangle(cornerRadius: 2)
-                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-                .frame(width: width - 2, height: height - 4)
-            
-            // Weight label (rotated for vertical plates)
-            if showLabel && height > 30 {
-                Text(plate.displayWeight(useMetric: useMetric))
-                    .font(.system(size: 8, weight: .bold, design: .rounded))
-                    .foregroundStyle(plate.color.isLight ? Color.black.opacity(0.8) : Color.white.opacity(0.9))
-                    .rotationEffect(.degrees(-90))
+        RoundedRectangle(cornerRadius: 1)
+            .fill(plate.color)
+            .overlay {
+                if plate.color.needsPlateOutline {
+                    RoundedRectangle(cornerRadius: 1)
+                        .strokeBorder(Color.ink, lineWidth: SBSLayout.strokeHairline)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if showLabel && height > 30 {
+                    // Fixed dark ink: the plate is the same colour in both themes, the theme's ink isn't
+                    Text(plate.displayWeight(useMetric: useMetric))
+                        .font(SBSFonts.numberTiny())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .foregroundStyle(plate.color.isLight ? Color.orangeInk : Color.white)
+                        .padding(.bottom, 3)
+                }
+            }
+            .frame(width: width, height: height)
+    }
+}
+
+// MARK: - Compact Plate Strip
+
+/// One side of the load, heaviest first: no bar, no labels. Sits next to a per-side list.
+struct PlateStrip: View {
+    let plates: [Plate]
+
+    private var sorted: [Plate] {
+        plates.sorted { $0.weight > $1.weight }
+    }
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 3) {
+            ForEach(Array(sorted.enumerated()), id: \.offset) { _, plate in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(plate.color)
+                    .overlay {
+                        if plate.color.needsPlateOutline {
+                            RoundedRectangle(cornerRadius: 1)
+                                .strokeBorder(Color.ink, lineWidth: SBSLayout.strokeHairline)
+                        }
+                    }
+                    .frame(width: 8, height: 26 * plate.height)
             }
         }
+        .frame(height: 26, alignment: .bottom)
+        .accessibilityHidden(true)
     }
 }
 
@@ -629,13 +633,13 @@ struct PlateLegendView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Plate Colors")
-                    .font(SBSFonts.captionBold())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .eyebrowStyle()
+                    .foregroundStyle(Color.inkSecondary)
                 
                 if let settings = settings, settings.useCustomPlateColors && StoreManager.shared.canAccess(.customPlateColors) {
                     Text("(Custom)")
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.accentFallback)
+                        .foregroundStyle(Color.orangeText)
                 }
             }
             
@@ -646,23 +650,20 @@ struct PlateLegendView: View {
             ], spacing: 8) {
                 ForEach(plates) { plate in
                     HStack(spacing: 6) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(plate.color)
-                            .frame(width: 16, height: 24)
-                            .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
+                        PlateView(plate: plate, height: 24, width: 16, showLabel: false)
                         
                         VStack(alignment: .leading, spacing: 0) {
                             Text(plate.displayWeight(useMetric: useMetric))
-                                .font(SBSFonts.caption())
-                                .foregroundStyle(SBSColors.textPrimaryFallback)
+                                .font(SBSFonts.numberSmall())
+                                .foregroundStyle(Color.ink)
                             
                             // Show count if using My Plates
                             if let settings = settings,
                                settings.useMyPlates && StoreManager.shared.canAccess(.myPlates) {
                                 let count = settings.plateCount(for: plate.weight)
                                 Text("×\(count)")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(count > 0 ? SBSColors.textSecondaryFallback : SBSColors.error.opacity(0.7))
+                                    .font(SBSFonts.numberTiny())
+                                    .foregroundStyle(count > 0 ? Color.inkSecondary : Color.danger)
                             }
                         }
                     }
@@ -670,10 +671,7 @@ struct PlateLegendView: View {
             }
         }
         .padding()
-        .background(
-            RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                .fill(SBSColors.surfaceFallback)
-        )
+        .card()
     }
 }
 
@@ -693,7 +691,7 @@ struct PlateListView: View {
         if result.platesPerSide.isEmpty {
             Text("Bar only")
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
+                .foregroundStyle(Color.inkSecondary)
         } else {
             // Group plates by weight, sorted largest first (closest to bar)
             let grouped = Dictionary(grouping: result.platesPerSide) { $0.weight }
@@ -702,7 +700,7 @@ struct PlateListView: View {
             HStack(spacing: 4) {
                 Text("Load:")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 
                 ForEach(sortedWeights, id: \.self) { weight in
                     if let plates = grouped[weight], let plate = plates.first {
@@ -710,23 +708,23 @@ struct PlateListView: View {
                             if plates.count > 1 {
                                 Text("\(plates.count)×")
                                     .font(SBSFonts.caption())
-                                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                                    .foregroundStyle(Color.inkSecondary)
                             }
                             
                             HStack(spacing: 2) {
-                                Circle()
+                                Rectangle()
                                     .fill(plate.color)
                                     .frame(width: 10, height: 10)
                                 Text(plate.displayWeight(useMetric: useMetric))
-                                    .font(SBSFonts.captionBold())
-                                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                                .font(SBSFonts.numberSmall())
+                                    .foregroundStyle(Color.ink)
                             }
                         }
                         
                         if weight != sortedWeights.last {
                             Text("+")
                                 .font(SBSFonts.caption())
-                                .foregroundStyle(SBSColors.textTertiaryFallback)
+                                .foregroundStyle(Color.inkSecondary)
                         }
                     }
                 }
@@ -743,19 +741,19 @@ struct PlateListView: View {
             .font(.headline)
         BarbellView(weight: 135, useMetric: false)
         
-        Divider()
+        Divider().overlay(Color.hairline)
         
         Text("225 lb")
             .font(.headline)
         BarbellView(weight: 225, useMetric: false)
         
-        Divider()
+        Divider().overlay(Color.hairline)
         
         Text("315 lb")
             .font(.headline)
         BarbellView(weight: 315, useMetric: false)
         
-        Divider()
+        Divider().overlay(Color.hairline)
         
         Text("405 lb")
             .font(.headline)

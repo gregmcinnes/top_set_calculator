@@ -6,6 +6,8 @@ struct Top_Set_CalculatorApp: App {
     @State private var showOnboarding = false
     
     init() {
+        BrandFonts.register()
+        BrandAppearance.apply()
         #if DEBUG
         // UI tests start from a clean slate, before anything loads saved state
         let arguments = ProcessInfo.processInfo.arguments
@@ -26,6 +28,8 @@ struct Top_Set_CalculatorApp: App {
         WindowGroup {
             CalculatorsView(settings: settings)
                 .sbsBackground()
+                .toggleStyle(SBSToggleStyle())
+                .tint(Color.orangeText)
                 .preferredColorScheme(settings.appearanceMode.colorScheme)
                 .onAppear {
                     // Show onboarding on first launch

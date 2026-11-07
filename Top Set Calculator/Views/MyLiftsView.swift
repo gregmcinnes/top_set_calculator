@@ -13,7 +13,9 @@ struct MyLiftsView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: SBSLayout.cardSpacing) {
+            VStack(spacing: SBSLayout.space3) {
+                ScreenTitle("My Lifts")
+                    .padding(.horizontal, -SBSLayout.space4)
                 ForEach(store.lifts) { lift in
                     NavigationLink(value: CalculatorRoute.liftDetail(lift.id)) {
                         liftCard(lift)
@@ -23,15 +25,14 @@ struct MyLiftsView: View {
                 
                 Text("Save a set from the One-Rep Max or RPE calculator, or open a lift to add one.")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                     .multilineTextAlignment(.center)
-                    .padding(.top, SBSLayout.paddingSmall)
+                    .padding(.top, SBSLayout.space2)
             }
             .padding()
         }
         .sbsBackground()
-        .navigationTitle("My Lifts")
-        .navigationBarTitleDisplayMode(.inline)
+        .screenNavigation("My Lifts")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -54,17 +55,17 @@ struct MyLiftsView: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(lift.name)
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                 
                 if let best = store.best(for: lift.id) {
                     Text("Best e1RM \(best.e1RM(useMetric: settings.useMetric).weightString(maxFractionDigits: 1)) \(settings.unitLabel)")
-                        .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                        .font(SBSFonts.numberSmall())
+                        .foregroundStyle(Color.inkSecondary)
                 } else {
                     Text("No sets saved yet")
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textTertiaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                 }
             }
             
@@ -74,19 +75,19 @@ struct MyLiftsView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(latest.e1RM(useMetric: settings.useMetric).weightString(maxFractionDigits: 1))
                         .font(SBSFonts.number())
-                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                        .foregroundStyle(Color.ink)
                     Text("latest")
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textTertiaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                 }
             }
             
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(SBSColors.textTertiaryFallback)
+                .foregroundStyle(Color.inkTertiary)
         }
         .padding()
-        .sbsCard()
+        .card()
     }
 }
 
@@ -122,6 +123,11 @@ struct LiftDetailView: View {
     
     var body: some View {
         List {
+            ScreenTitle(lift?.name ?? "Lift")
+                .listRowInsets(EdgeInsets(top: SBSLayout.space2, leading: 0, bottom: SBSLayout.space3, trailing: 0))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
             summarySection
             
             if history.count >= 2 {
@@ -131,7 +137,10 @@ struct LiftDetailView: View {
                         .padding(.vertical, 8)
                 } header: {
                     Text("Estimated 1RM (\(settings.unitLabel))")
+                        .eyebrowStyle()
+                        .foregroundStyle(Color.inkSecondary)
                 }
+                .listRowBackground(Color.surface)
             }
             
             if let latestE1RM {
@@ -144,21 +153,27 @@ struct LiftDetailView: View {
                     }
                 }
                 .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
+                .listRowInsets(EdgeInsets(top: SBSLayout.space3, leading: SBSLayout.space4, bottom: SBSLayout.space3, trailing: SBSLayout.space4))
+                .listRowSeparator(.hidden)
             }
             
             historySection
             
             Section {
-                Button("Delete Lift", role: .destructive) {
+                Button(role: .destructive) {
                     showingDeleteLift = true
+                } label: {
+                    Text("Delete Lift")
+                        .font(SBSFonts.bodyStrong())
+                        .foregroundStyle(Color.danger)
                 }
             }
+            .listRowBackground(Color.surface)
         }
+        .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .sbsBackground()
-        .navigationTitle(lift?.name ?? "Lift")
-        .navigationBarTitleDisplayMode(.inline)
+        .screenNavigation(lift?.name ?? "Lift")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -201,20 +216,21 @@ struct LiftDetailView: View {
         Section {
             HStack {
                 summaryStat(title: "Latest e1RM", value: latestE1RM)
-                Divider()
+                Divider().overlay(Color.hairline)
                 summaryStat(title: "Best e1RM", value: best?.e1RM(useMetric: settings.useMetric))
             }
         }
+        .listRowBackground(Color.surface)
     }
     
     private func summaryStat(title: String, value: Double?) -> some View {
         VStack(spacing: 4) {
             Text(title)
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
+                .foregroundStyle(Color.inkSecondary)
             Text(value.map { "\($0.weightString(maxFractionDigits: 1)) \(settings.unitLabel)" } ?? "—")
-                .font(SBSFonts.title2())
-                .foregroundStyle(SBSColors.textPrimaryFallback)
+                .font(SBSFonts.numberLarge())
+                .foregroundStyle(Color.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
         }
@@ -245,31 +261,31 @@ struct LiftDetailView: View {
                 )
                 .interpolationMethod(.monotone)
                 .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                .foregroundStyle(SBSColors.accentFallback)
+                .foregroundStyle(Color.orangeText)
                 
                 PointMark(
                     x: .value("Date", entry.date),
                     y: .value("Estimated 1RM", entry.e1RM(useMetric: settings.useMetric))
                 )
                 .symbolSize(50)
-                .foregroundStyle(SBSColors.accentFallback)
+                .foregroundStyle(Color.orangeText)
             }
             
             if let selectedEntry {
                 RuleMark(x: .value("Selected", selectedEntry.date))
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                     .lineStyle(StrokeStyle(lineWidth: 1))
                     .annotation(position: .top, overflowResolution: .init(x: .fit(to: .chart), y: .fit(to: .chart))) {
                         VStack(spacing: 2) {
                             Text("\(selectedEntry.e1RM(useMetric: settings.useMetric).weightString(maxFractionDigits: 1)) \(settings.unitLabel)")
-                                .font(SBSFonts.captionBold())
-                                .foregroundStyle(SBSColors.textPrimaryFallback)
+                                .font(SBSFonts.numberSmall())
+                                .foregroundStyle(Color.ink)
                             Text(selectedEntry.date.formatted(date: .abbreviated, time: .omitted))
                                 .font(.caption2)
-                                .foregroundStyle(SBSColors.textSecondaryFallback)
+                                .foregroundStyle(Color.inkSecondary)
                         }
                         .padding(6)
-                        .background(SBSColors.surfaceElevatedFallback)
+                        .background(Color.surfaceRaised)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
             }
@@ -278,13 +294,13 @@ struct LiftDetailView: View {
         .chartYScale(domain: (low - padding)...(high + padding))
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                AxisTick().foregroundStyle(SBSColors.textTertiaryFallback)
+                AxisTick().foregroundStyle(Color.inkSecondary)
                 AxisValueLabel(format: .dateTime.month(.abbreviated).day())
             }
         }
         .chartYAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { _ in
-                AxisGridLine().foregroundStyle(SBSColors.textTertiaryFallback.opacity(0.25))
+                AxisGridLine().foregroundStyle(Color.hairline)
                 AxisValueLabel()
             }
         }
@@ -295,39 +311,39 @@ struct LiftDetailView: View {
     // MARK: History
     
     private var historySection: some View {
-        Section("History") {
+        Section {
             if history.isEmpty {
                 Text("No sets saved yet. Tap + to add one.")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
             
             ForEach(history.reversed()) { entry in
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(setDescription(entry))
-                            .font(SBSFonts.bodyBold())
-                            .foregroundStyle(SBSColors.textPrimaryFallback)
+                            .font(SBSFonts.number())
+                            .foregroundStyle(Color.ink)
                         Text(entry.date.formatted(date: .abbreviated, time: .omitted))
-                            .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                            .font(SBSFonts.numberSmall())
+                            .foregroundStyle(Color.inkSecondary)
                     }
                     
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(entry.e1RM(useMetric: settings.useMetric).weightString(maxFractionDigits: 1))
-                            .font(SBSFonts.bodyBold())
-                            .foregroundStyle(SBSColors.textPrimaryFallback)
+                            .font(SBSFonts.number())
+                            .foregroundStyle(Color.ink)
                         
                         if entry.id == best?.id {
                             Label("Best", systemImage: "trophy.fill")
                                 .font(SBSFonts.caption())
-                                .foregroundStyle(SBSColors.accentFallback)
+                                .foregroundStyle(Color.orangeText)
                         } else {
                             Text("e1RM")
                                 .font(SBSFonts.caption())
-                                .foregroundStyle(SBSColors.textTertiaryFallback)
+                                .foregroundStyle(Color.inkSecondary)
                         }
                     }
                 }
@@ -337,7 +353,12 @@ struct LiftDetailView: View {
                     }
                 }
             }
+        } header: {
+            Text("History")
+                .eyebrowStyle()
+                .foregroundStyle(Color.inkSecondary)
         }
+        .listRowBackground(Color.surface)
     }
     
     private func setDescription(_ entry: LiftEntry) -> String {
@@ -384,10 +405,11 @@ private struct AddSetView: View {
                         .keyboardType(.numberPad)
                     DatePicker("Date", selection: $date, in: ...Date.now, displayedComponents: .date)
                 }
+                .listRowBackground(Color.surface)
                 
                 Section {
                     Toggle("Record RPE", isOn: $usesRPE)
-                        .tint(SBSColors.accentFallback)
+                        .tint(Color.orangeFill)
                     
                     if usesRPE {
                         Picker("RPE", selection: $rpe) {
@@ -397,7 +419,12 @@ private struct AddSetView: View {
                         }
                     }
                 }
+                .listRowBackground(Color.surface)
             }
+            .font(SBSFonts.body())
+            .toggleStyle(SBSToggleStyle())
+            .scrollContentBackground(.hidden)
+            .sbsBackground()
             .navigationTitle("Add Set")
             .navigationBarTitleDisplayMode(.inline)
             .keyboardDoneToolbar()

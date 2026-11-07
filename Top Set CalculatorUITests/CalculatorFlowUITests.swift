@@ -60,7 +60,7 @@ final class CalculatorFlowUITests: XCTestCase {
         let app = launch(premium: false)
         screenshot("free-home", app)
         openCard("Warm-up Generator", app)
-        XCTAssertTrue(app.staticTexts["Unlock Premium"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["UNLOCK PREMIUM"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Warm-up Generator"].exists)
         screenshot("free-paywall", app)
     }
@@ -123,7 +123,7 @@ final class CalculatorFlowUITests: XCTestCase {
         dismissKeyboard(app)
         
         XCTAssertTrue(app.staticTexts["Top set"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["3 × 45 per side"].exists)
+        XCTAssertTrue(app.staticTexts["45 · 45 · 45 per side"].exists)
         screenshot("warmups", app)
     }
     
@@ -156,7 +156,7 @@ final class CalculatorFlowUITests: XCTestCase {
         screenshot("free-plate-closest", app)
         
         app.buttons["Upgrade to Premium for 1.25 lb change plates"].tap()
-        XCTAssertTrue(app.staticTexts["Unlock Premium"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["UNLOCK PREMIUM"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Extended Equipment"].exists)
     }
     

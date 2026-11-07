@@ -544,6 +544,13 @@ extension AppSettings {
 // MARK: - Color Hex Conversion
 
 extension Color {
+    /// Near-white plates need an outline to survive on the chalk background
+    var needsPlateOutline: Bool {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        guard UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a) else { return false }
+        return 0.299 * r + 0.587 * g + 0.114 * b > 0.85
+    }
+
     init?(hex: String) {
         var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
         hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")

@@ -51,7 +51,7 @@ struct PlateSettingsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: SBSLayout.sectionSpacing) {
+                VStack(spacing: SBSLayout.space6) {
                     premiumStatusSection
                     
                     // General Settings Section
@@ -80,6 +80,7 @@ struct PlateSettingsView: View {
             .sbsBackground()
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .toggleStyle(SBSToggleStyle())
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
@@ -131,37 +132,37 @@ struct PlateSettingsView: View {
     // MARK: - Premium Status
     
     private var premiumStatusSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             if StoreManager.shared.isPremium {
-                HStack(spacing: SBSLayout.paddingSmall) {
+                HStack(spacing: SBSLayout.space2) {
                     Image(systemName: "crown.fill")
-                        .foregroundStyle(SBSColors.accentFallback)
+                        .foregroundStyle(Color.orangeText)
                     Text("Premium Active")
-                        .font(SBSFonts.bodyBold())
-                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                        .font(SBSFonts.bodyStrong())
+                        .foregroundStyle(Color.ink)
                     Spacer()
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(SBSColors.success)
+                        .foregroundStyle(Color.success)
                 }
             } else {
                 Button {
                     paywallFeature = .warmups
                 } label: {
-                    HStack(spacing: SBSLayout.paddingSmall) {
+                    HStack(spacing: SBSLayout.space2) {
                         Image(systemName: "crown.fill")
-                            .foregroundStyle(SBSColors.accentFallback)
+                            .foregroundStyle(Color.orangeText)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Unlock Premium")
-                                .font(SBSFonts.bodyBold())
-                                .foregroundStyle(SBSColors.textPrimaryFallback)
+                                .font(SBSFonts.bodyStrong())
+                                .foregroundStyle(Color.ink)
                             Text("One-time purchase, no subscription")
                                 .font(SBSFonts.caption())
-                                .foregroundStyle(SBSColors.textSecondaryFallback)
+                                .foregroundStyle(Color.inkSecondary)
                         }
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                            .foregroundStyle(Color.inkTertiary)
                     }
                 }
                 .buttonStyle(.plain)
@@ -171,13 +172,13 @@ struct PlateSettingsView: View {
                 } label: {
                     Text(isRestoring ? "Restoring…" : "Restore Purchases")
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.accentFallback)
+                        .foregroundStyle(Color.orangeText)
                 }
                 .disabled(isRestoring)
             }
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
@@ -200,13 +201,13 @@ struct PlateSettingsView: View {
     // MARK: - Gym Profiles
     
     private var gymProfilesSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             HStack {
                 Image(systemName: "building.2.fill")
-                    .foregroundStyle(SBSColors.accentFallback)
+                    .foregroundStyle(Color.ink)
                 Text("Gym Profiles")
-                    .font(SBSFonts.title3())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.heading())
+                    .foregroundStyle(Color.ink)
                 Spacer()
                 if !StoreManager.shared.canAccess(.gymProfiles) {
                     PremiumBadge()
@@ -216,7 +217,7 @@ struct PlateSettingsView: View {
             if StoreManager.shared.canAccess(.gymProfiles) {
                 Text("Each gym keeps its own units, bar, plates and collars. Changes below apply to the selected gym.")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 
                 ForEach(settings.gymProfiles) { profile in
                     HStack {
@@ -224,15 +225,15 @@ struct PlateSettingsView: View {
                             settings.selectGymProfile(id: profile.id)
                         } label: {
                             HStack {
-                                Image(systemName: profile.id == settings.activeGymProfileID ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(profile.id == settings.activeGymProfileID ? SBSColors.accentFallback : SBSColors.textTertiaryFallback)
+                                Image(systemName: profile.id == settings.activeGymProfileID ? "checkmark.square.fill" : "square")
+                                    .foregroundStyle(profile.id == settings.activeGymProfileID ? Color.orangeText : Color.inkSecondary)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(profile.name)
-                                        .font(SBSFonts.bodyBold())
-                                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                                        .font(SBSFonts.bodyStrong())
+                                        .foregroundStyle(Color.ink)
                                     Text("\(profile.barWeight.weightString()) \(profile.useMetric ? "kg" : "lb") bar")
-                                        .font(SBSFonts.caption())
-                                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                                        .font(SBSFonts.numberSmall())
+                                        .foregroundStyle(Color.inkSecondary)
                                 }
                                 Spacer()
                             }
@@ -252,7 +253,7 @@ struct PlateSettingsView: View {
                             }
                         } label: {
                             Image(systemName: "ellipsis.circle")
-                                .foregroundStyle(SBSColors.textSecondaryFallback)
+                                .foregroundStyle(Color.inkSecondary)
                                 .frame(minWidth: 44, minHeight: 44)
                         }
                         .accessibilityLabel("Options for \(profile.name)")
@@ -264,8 +265,8 @@ struct PlateSettingsView: View {
                     showingNewProfile = true
                 } label: {
                     Label("Add Gym", systemImage: "plus")
-                        .font(SBSFonts.captionBold())
-                        .foregroundStyle(SBSColors.accentFallback)
+                        .font(SBSFonts.caption())
+                        .foregroundStyle(Color.orangeText)
                 }
             } else {
                 lockedFeatureCard(
@@ -275,20 +276,20 @@ struct PlateSettingsView: View {
             }
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
     // MARK: - Extended Equipment
     
     private var extendedEquipmentSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             HStack {
                 Image(systemName: "dumbbell.fill")
-                    .foregroundStyle(SBSColors.accentFallback)
+                    .foregroundStyle(Color.ink)
                 Text("Extended Equipment")
-                    .font(SBSFonts.title3())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.heading())
+                    .foregroundStyle(Color.ink)
                 Spacer()
                 if !canAccessExtendedEquipment {
                     PremiumBadge()
@@ -300,32 +301,32 @@ struct PlateSettingsView: View {
                     Toggle(isOn: $settings.use55LbPlates) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Use 55 lb Plates")
-                                .font(SBSFonts.bodyBold())
+                                .font(SBSFonts.bodyStrong())
                             Text("Loads 55s first. Most gyms top out at 45s.")
                                 .font(SBSFonts.caption())
-                                .foregroundStyle(SBSColors.textSecondaryFallback)
+                                .foregroundStyle(Color.inkSecondary)
                         }
                     }
-                    .tint(SBSColors.accentFallback)
+                    .tint(Color.orangeFill)
                     .disabled(settings.useMyPlates)
                     
                     if settings.useMyPlates {
                         Text("My Plates is on, so your 55 lb count decides this.")
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                     }
                     
-                    Divider()
+                    Divider().overlay(Color.hairline)
                 }
                 
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Collars")
-                            .font(SBSFonts.bodyBold())
-                            .foregroundStyle(SBSColors.textPrimaryFallback)
+                            .font(SBSFonts.bodyStrong())
+                            .foregroundStyle(Color.ink)
                         Text("Weight of one collar, counted on both sides")
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                     }
                     
                     Spacer()
@@ -342,33 +343,32 @@ struct PlateSettingsView: View {
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: 70)
                     .padding(8)
-                    .background(SBSColors.surfaceElevatedFallback)
-                    .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                    .field()
                     .accessibilityLabel("Collar weight")
                     
                     Text(settings.unitLabel)
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                 }
                 
-                Divider()
+                Divider().overlay(Color.hairline)
                 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Custom Plate Sizes")
-                        .font(SBSFonts.bodyBold())
-                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                        .font(SBSFonts.bodyStrong())
+                        .foregroundStyle(Color.ink)
                     
                     ForEach(settings.customPlateWeights(useMetric: settings.useMetric).sorted(by: >), id: \.self) { weight in
                         HStack {
                             Text("\(weight.weightString()) \(settings.unitLabel)")
-                                .font(SBSFonts.body())
-                                .foregroundStyle(SBSColors.textPrimaryFallback)
+                                .font(SBSFonts.number())
+                                .foregroundStyle(Color.ink)
                             Spacer()
                             Button {
                                 settings.removeCustomPlate(weight: weight)
                             } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .foregroundStyle(SBSColors.error)
+                                Image(systemName: "minus.square.fill")
+                                    .foregroundStyle(Color.danger)
                                     .frame(minWidth: 44, minHeight: 44)
                             }
                             .accessibilityLabel("Remove \(weight.weightString()) \(settings.unitLabel) plate")
@@ -379,21 +379,20 @@ struct PlateSettingsView: View {
                         TextField(settings.useMetric ? "e.g. 0.25" : "e.g. 15", text: $newPlateWeight)
                             .keyboardType(.decimalPad)
                             .padding(8)
-                            .background(SBSColors.surfaceElevatedFallback)
-                            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                            .field()
                             .accessibilityLabel("New plate size")
                         
                         Text(settings.unitLabel)
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                         
                         Button("Add") {
                             if let weight = WeightInput.parse(newPlateWeight, maximum: 200), settings.addCustomPlate(weight: weight) {
                                 newPlateWeight = ""
                             }
                         }
-                        .font(SBSFonts.captionBold())
-                        .foregroundStyle(SBSColors.accentFallback)
+                        .font(SBSFonts.caption())
+                        .foregroundStyle(Color.orangeText)
                         .disabled(WeightInput.parse(newPlateWeight, maximum: 200) == nil)
                     }
                 }
@@ -405,7 +404,7 @@ struct PlateSettingsView: View {
             }
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
@@ -416,36 +415,36 @@ struct PlateSettingsView: View {
     // MARK: - Version Section
     
     private var versionSection: some View {
-        VStack(spacing: SBSLayout.paddingSmall) {
+        VStack(spacing: SBSLayout.space2) {
             Text("Top Set Calculator")
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textTertiaryFallback)
+                .foregroundStyle(Color.inkSecondary)
             
             Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textTertiaryFallback)
+                .foregroundStyle(Color.inkSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, SBSLayout.paddingLarge)
+        .padding(.vertical, SBSLayout.space6)
     }
     
     // MARK: - General Settings Section
     
     private var generalSettingsSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             HStack {
                 Image(systemName: "gearshape.fill")
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 Text("General")
-                    .font(SBSFonts.title3())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.heading())
+                    .foregroundStyle(Color.ink)
             }
             
             // Appearance Mode
             VStack(alignment: .leading, spacing: 8) {
                 Text("Appearance")
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                 
                 HStack(spacing: 8) {
                     ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
@@ -462,22 +461,8 @@ struct PlateSettingsView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall)
-                                    .fill(settings.appearanceMode == mode ? 
-                                          SBSColors.accentFallback.opacity(0.15) : 
-                                          SBSColors.surfaceFallback)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall)
-                                    .stroke(settings.appearanceMode == mode ? 
-                                            SBSColors.accentFallback : 
-                                            SBSColors.textTertiaryFallback.opacity(0.3), 
-                                            lineWidth: settings.appearanceMode == mode ? 2 : 1)
-                            )
-                            .foregroundStyle(settings.appearanceMode == mode ? 
-                                             SBSColors.accentFallback : 
-                                             SBSColors.textSecondaryFallback)
+                            .chipBackground(isSelected: settings.appearanceMode == mode)
+                            .foregroundStyle(Color.ink)
                         }
                         .buttonStyle(.plain)
                     }
@@ -485,18 +470,17 @@ struct PlateSettingsView: View {
             }
             .padding(.vertical, 4)
             
-            Divider()
-                .background(SBSColors.textTertiaryFallback.opacity(0.2))
+            Divider().overlay(Color.hairline)
             
             // Unit Toggle
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Units")
-                        .font(SBSFonts.bodyBold())
-                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                        .font(SBSFonts.bodyStrong())
+                        .foregroundStyle(Color.ink)
                     Text(settings.useMetric ? "Kilograms (kg)" : "Pounds (lb)")
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                 }
                 
                 Spacer()
@@ -510,19 +494,18 @@ struct PlateSettingsView: View {
             }
             .padding(.vertical, 4)
             
-            Divider()
-                .background(SBSColors.textTertiaryFallback.opacity(0.2))
+            Divider().overlay(Color.hairline)
             
             // Rounding
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Round Weights To")
-                            .font(SBSFonts.bodyBold())
-                            .foregroundStyle(SBSColors.textPrimaryFallback)
+                            .font(SBSFonts.bodyStrong())
+                            .foregroundStyle(Color.ink)
                         Text("For suggested training weights")
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                     }
                     
                     Spacer()
@@ -542,32 +525,31 @@ struct PlateSettingsView: View {
                             Image(systemName: "chevron.up.chevron.down")
                                 .font(.caption2)
                         }
-                        .foregroundStyle(SBSColors.accentFallback)
+                        .foregroundStyle(Color.orangeText)
                     }
                 }
                 
                 if let step = settings.smallestLoadStep, settings.roundingIncrement > 0,
                    (settings.roundingIncrement / step).rounded() != settings.roundingIncrement / step {
                     Text("Your plates load in \(step.weightString()) \(settings.unitLabel) steps, so some rounded weights won't be exact on the bar.")
-                        .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.warning)
+                        .font(SBSFonts.numberSmall())
+                        .foregroundStyle(Color.warning)
                 }
             }
             .padding(.vertical, 4)
             
-            Divider()
-                .background(SBSColors.textTertiaryFallback.opacity(0.2))
+            Divider().overlay(Color.hairline)
             
             // Bar Weight
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Default Bar Weight")
-                            .font(SBSFonts.bodyBold())
-                            .foregroundStyle(SBSColors.textPrimaryFallback)
+                            .font(SBSFonts.bodyStrong())
+                            .foregroundStyle(Color.ink)
                         Text("Used in Plate Calculator")
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                     }
                     
                     Spacer()
@@ -588,7 +570,7 @@ struct PlateSettingsView: View {
                             }
                             
                             if canAccessExtendedEquipment {
-                                Divider()
+                                Divider().overlay(Color.hairline)
                                 Button {
                                     customBarWeight = settings.barWeight.weightString()
                                     showingCustomBarWeight = true
@@ -610,7 +592,7 @@ struct PlateSettingsView: View {
                                 Image(systemName: "chevron.up.chevron.down")
                                     .font(.system(size: 10))
                             }
-                            .foregroundStyle(SBSColors.accentFallback)
+                            .foregroundStyle(Color.orangeText)
                         }
                     }
                 }
@@ -624,8 +606,7 @@ struct PlateSettingsView: View {
                             .textFieldStyle(.plain)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 10)
-                            .background(SBSColors.surfaceElevatedFallback)
-                            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                            .field()
                             .focused($isBarWeightFocused)
                             .onChange(of: customBarWeight) { _, newValue in
                                 if let weight = WeightInput.parse(newValue, maximum: PlateCalculator.maximumTotalWeight) {
@@ -635,7 +616,7 @@ struct PlateSettingsView: View {
                         
                         Text(settings.useMetric ? "kg" : "lb")
                             .font(SBSFonts.body())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                         
                         Button {
                             showingCustomBarWeight = false
@@ -643,7 +624,7 @@ struct PlateSettingsView: View {
                         } label: {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 24))
-                                .foregroundStyle(SBSColors.accentFallback)
+                                .foregroundStyle(Color.orangeText)
                         }
                     }
                 }
@@ -651,7 +632,7 @@ struct PlateSettingsView: View {
             .padding(.vertical, 4)
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
@@ -662,13 +643,13 @@ struct PlateSettingsView: View {
     // MARK: - Custom Colors Section
     
     private var customColorsSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             HStack {
                 Image(systemName: "paintpalette.fill")
-                    .foregroundStyle(SBSColors.accentFallback)
+                    .foregroundStyle(Color.ink)
                 Text("Custom Plate Colors")
-                    .font(SBSFonts.title3())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.heading())
+                    .foregroundStyle(Color.ink)
                 
                 Spacer()
                 
@@ -679,7 +660,7 @@ struct PlateSettingsView: View {
             
             if canAccessCustomColors {
                 Toggle("Enable Custom Colors", isOn: $settings.useCustomPlateColors)
-                    .tint(SBSColors.accentFallback)
+                    .tint(Color.orangeFill)
                 
                 if settings.useCustomPlateColors {
                     VStack(spacing: 12) {
@@ -698,7 +679,7 @@ struct PlateSettingsView: View {
                     } label: {
                         Text("Reset to Default Colors")
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.accentFallback)
+                            .foregroundStyle(Color.orangeText)
                     }
                     .padding(.top, 8)
                 }
@@ -710,20 +691,20 @@ struct PlateSettingsView: View {
             }
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
     // MARK: - My Plates Section
     
     private var myPlatesSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             HStack {
                 Image(systemName: "tray.full.fill")
-                    .foregroundStyle(SBSColors.accentFallback)
+                    .foregroundStyle(Color.ink)
                 Text("My Plates")
-                    .font(SBSFonts.title3())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.heading())
+                    .foregroundStyle(Color.ink)
                 
                 Spacer()
                 
@@ -734,11 +715,11 @@ struct PlateSettingsView: View {
             
             Text("Configure which plates you own so the calculator only uses what you have available.")
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
+                .foregroundStyle(Color.inkSecondary)
             
             if canAccessMyPlates {
                 Toggle("Use My Plate Inventory", isOn: $settings.useMyPlates)
-                    .tint(SBSColors.accentFallback)
+                    .tint(Color.orangeFill)
                 
                 if settings.useMyPlates {
                     VStack(spacing: 12) {
@@ -757,7 +738,7 @@ struct PlateSettingsView: View {
                     } label: {
                         Text("Reset to Default Quantities")
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.accentFallback)
+                            .foregroundStyle(Color.orangeText)
                     }
                     .padding(.top, 8)
                 }
@@ -769,20 +750,20 @@ struct PlateSettingsView: View {
             }
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
     // MARK: - More Apps Section
     
     private var moreAppsSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             HStack {
                 Image(systemName: "square.stack.3d.up.fill")
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 Text("More from Top Set")
-                    .font(SBSFonts.title3())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.heading())
+                    .foregroundStyle(Color.ink)
             }
             
             // Top Set Training App Card
@@ -802,13 +783,13 @@ struct PlateSettingsView: View {
             )
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
     private func appCard(iconName: String, appName: String, description: String, url: String) -> some View {
         Link(destination: URL(string: url)!) {
-            HStack(spacing: SBSLayout.paddingMedium) {
+            HStack(spacing: SBSLayout.space4) {
                 // App Icon
                 Image(iconName)
                     .resizable()
@@ -819,17 +800,17 @@ struct PlateSettingsView: View {
                 // App Info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(appName)
-                        .font(SBSFonts.bodyBold())
-                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                        .font(SBSFonts.bodyStrong())
+                        .foregroundStyle(Color.ink)
                     
                     Text(description)
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                         .multilineTextAlignment(.leading)
                     
                     Text("Health & Fitness")
                         .font(.system(size: 10))
-                        .foregroundStyle(SBSColors.textTertiaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                 }
                 
                 Spacer()
@@ -837,16 +818,16 @@ struct PlateSettingsView: View {
                 // External link indicator
                 Image(systemName: "arrow.up.forward")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
             .padding()
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                    .fill(SBSColors.surfaceFallback)
+                RoundedRectangle(cornerRadius: SBSLayout.radiusSm)
+                    .fill(Color.surface)
                     .overlay(
-                        RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                            .stroke(SBSColors.textTertiaryFallback.opacity(0.2), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: SBSLayout.radiusSm)
+                            .stroke(Color.hairline, lineWidth: 1)
                     )
             )
         }
@@ -859,47 +840,25 @@ struct PlateSettingsView: View {
     }
     
     private func lockedFeatureCard(description: String, feature: PremiumFeature) -> some View {
-        VStack(spacing: SBSLayout.paddingMedium) {
+        VStack(spacing: SBSLayout.space4) {
             HStack {
                 Image(systemName: "lock.fill")
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 Text(description)
                     .font(SBSFonts.body())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
             
             Button {
                 paywallFeature = feature
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 12))
-                    Text("Unlock with Premium")
-                        .font(SBSFonts.captionBold())
-                }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    LinearGradient(
-                        colors: [SBSColors.accentFallback, SBSColors.accentSecondaryFallback],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(Capsule())
+                Text("Unlock with Premium")
             }
+            .buttonStyle(SBSSecondaryButtonStyle())
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(
-            RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall)
-                .fill(SBSColors.surfaceFallback)
-                .overlay(
-                    RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall)
-                        .strokeBorder(SBSColors.textTertiaryFallback.opacity(0.3), lineWidth: 1)
-                )
-        )
+        .card()
     }
 }
 
@@ -922,21 +881,20 @@ struct PlateColorRow: View {
     }
     
     var body: some View {
-        HStack(spacing: SBSLayout.paddingMedium) {
+        HStack(spacing: SBSLayout.space4) {
             // Plate preview
             RoundedRectangle(cornerRadius: 3)
                 .fill(color)
                 .frame(width: 20, height: 32)
-                .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
             
             // Weight label
             Text(plate.displayWeight(useMetric: useMetric))
-                .font(SBSFonts.bodyBold())
-                .foregroundStyle(SBSColors.textPrimaryFallback)
+                .font(SBSFonts.bodyStrong())
+                .foregroundStyle(Color.ink)
             
             Text(useMetric ? "kg" : "lb")
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
+                .foregroundStyle(Color.inkSecondary)
             
             Spacer()
             
@@ -962,22 +920,21 @@ struct PlateInventoryRow: View {
     }
     
     var body: some View {
-        HStack(spacing: SBSLayout.paddingMedium) {
+        HStack(spacing: SBSLayout.space4) {
             // Plate preview
             RoundedRectangle(cornerRadius: 3)
                 .fill(settings.plateColor(for: plate.weight, defaultColor: plate.color))
                 .frame(width: 20, height: 32)
-                .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
             
             // Weight label
             VStack(alignment: .leading, spacing: 2) {
                 Text(plate.displayWeight(useMetric: useMetric))
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                 
                 Text("per side")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
             
             Spacer()
@@ -987,24 +944,24 @@ struct PlateInventoryRow: View {
                 Button {
                     settings.setPlateCount(max(0, count - 1), for: plate.weight)
                 } label: {
-                    Image(systemName: "minus.circle.fill")
+                    Image(systemName: "minus.square.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(count > 0 ? SBSColors.accentFallback : SBSColors.textTertiaryFallback)
+                        .foregroundStyle(count > 0 ? Color.ink : Color.inkTertiary)
                 }
                 .disabled(count == 0)
                 .accessibilityLabel("Remove \(plate.displayWeight) \(useMetric ? "kg" : "lb") plate")
                 
                 Text("\(count)")
                     .font(SBSFonts.number())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .foregroundStyle(Color.ink)
                     .frame(minWidth: 30)
                 
                 Button {
                     settings.setPlateCount(min(maximumCount, count + 1), for: plate.weight)
                 } label: {
-                    Image(systemName: "plus.circle.fill")
+                    Image(systemName: "plus.square.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(count < maximumCount ? SBSColors.accentFallback : SBSColors.textTertiaryFallback)
+                        .foregroundStyle(count < maximumCount ? Color.ink : Color.inkTertiary)
                 }
                 .disabled(count >= maximumCount)
                 .accessibilityLabel("Add \(plate.displayWeight) \(useMetric ? "kg" : "lb") plate")

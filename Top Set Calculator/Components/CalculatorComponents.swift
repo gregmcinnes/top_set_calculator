@@ -69,16 +69,15 @@ struct ResultActionLabel: View {
             Image(systemName: isLocked ? "lock.fill" : icon)
                 .font(.footnote.weight(.semibold))
             Text(title)
-                .font(SBSFonts.captionBold())
+                .font(SBSFonts.caption())
                 .multilineTextAlignment(.leading)
             Spacer(minLength: 0)
         }
-        .foregroundStyle(SBSColors.accentFallback)
+        .foregroundStyle(Color.ink)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, minHeight: 44)
-        .background(SBSColors.accentFallback.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+        .card()
     }
 }
 
@@ -138,19 +137,33 @@ struct PremiumResultLink: View {
 struct PremiumBadge: View {
     var body: some View {
         Text("PRO")
-            .font(.system(size: 9, weight: .bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [SBSColors.accentFallback, SBSColors.accentSecondaryFallback],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+            .eyebrowStyle()
+            .foregroundStyle(Color.bg)
+            .padding(.horizontal, SBSLayout.space2)
+            .padding(.vertical, 3)
+            .background(Color.ink)
+            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.radiusSm))
+    }
+}
+
+// MARK: - Status Badge
+
+/// Names a state. The word does the work; the colour only reinforces it.
+struct StatusBadge: View {
+    let text: String
+    var color: Color = .ink
+
+    var body: some View {
+        Text(text)
+            .eyebrowStyle()
+            .foregroundStyle(color)
+            .padding(.horizontal, SBSLayout.space2)
+            .padding(.vertical, 3)
+            .background(Color.surface)
+            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.radiusSm))
+            .overlay(
+                RoundedRectangle(cornerRadius: SBSLayout.radiusSm)
+                    .strokeBorder(color, lineWidth: SBSLayout.strokeHairline)
             )
     }
 }
@@ -236,12 +249,11 @@ struct LiftFillChips: View {
                             onSelect(option.e1RM)
                         } label: {
                             Text("\(option.lift.name) \(option.e1RM.weightString(maxFractionDigits: 1))")
-                                .font(SBSFonts.caption())
-                                .foregroundStyle(SBSColors.textPrimaryFallback)
+                                .font(SBSFonts.numberSmall())
+                                .foregroundStyle(Color.ink)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
-                                .background(SBSColors.surfaceElevatedFallback)
-                                .clipShape(Capsule())
+                                .field()
                         }
                     }
                 }
@@ -287,56 +299,59 @@ struct ResultShareCard: View {
     let title: String
     let value: String
     let detail: String
-    
+
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: SBSLayout.space3) {
             Text(title)
-                .font(.system(size: 17, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.7))
-            
-            Text(value)
-                .font(.system(size: 56, weight: .bold, design: .rounded))
-                .foregroundStyle(Color(red: 1.0, green: 0.6, blue: 0.3))
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-            
+                .eyebrowStyle()
+                .foregroundStyle(Color.inkSecondary)
+
+            HeroNumber(value: value)
+
             Text(detail)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.white.opacity(0.7))
-                .multilineTextAlignment(.center)
-            
-            Text("Top Set Calculator")
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.45))
-                .padding(.top, 12)
+                .font(SBSFonts.numberSmall())
+                .foregroundStyle(Color.inkSecondary)
+
+            HStack(spacing: SBSLayout.space2) {
+                Image("TopSetMark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24)
+                Text("Top Set Calculator")
+                    .eyebrowStyle()
+                    .foregroundStyle(Color.ink)
+            }
+            .padding(.top, SBSLayout.space4)
         }
-        .padding(32)
-        .frame(width: 360)
-        .background(Color(white: 0.1))
+        .padding(SBSLayout.space8)
+        .frame(width: 360, alignment: .leading)
+        .background(Color.bg)
+        // Shared cards are always Iron, whatever the app's appearance
+        .environment(\.colorScheme, .dark)
     }
 }
 
 // MARK: - Plate Load Text
 
-/// One line such as "2 × 45 + 10 per side"
+/// The compact plate strip with its per-side list: "45 · 45 · 10 per side"
 struct PlateLoadText: View {
     let result: PlateCalculatorResult
-    
+
     private var description: String {
         guard !result.platesPerSide.isEmpty else { return "Bar only" }
-        let grouped = Dictionary(grouping: result.platesPerSide, by: \.weight)
-        let parts = grouped.keys.sorted(by: >).map { weight in
-            let count = grouped[weight]?.count ?? 0
-            let label = weight.weightString()
-            return count > 1 ? "\(count) × \(label)" : label
-        }
-        return parts.joined(separator: " + ") + " per side"
+        let plates = result.platesPerSide.sorted { $0.weight > $1.weight }
+        return plates.map { $0.weight.weightString() }.joined(separator: " · ") + " per side"
     }
-    
+
     var body: some View {
-        Text(description)
-            .font(SBSFonts.caption())
-            .foregroundStyle(SBSColors.textSecondaryFallback)
+        VStack(alignment: .leading, spacing: SBSLayout.space2) {
+            if !result.platesPerSide.isEmpty {
+                PlateStrip(plates: result.platesPerSide)
+            }
+            Text(description)
+                .font(SBSFonts.numberSmall())
+                .foregroundStyle(Color.inkSecondary)
+        }
     }
 }
 
@@ -352,22 +367,21 @@ struct WeightField: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
+                .foregroundStyle(Color.inkSecondary)
             
             HStack {
                 TextField("0", text: $text)
-                    .font(SBSFonts.weightLarge())
+                    .font(SBSFonts.numberLarge())
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
                     .accessibilityLabel(label)
                 
                 Text(unit)
-                    .font(SBSFonts.title2())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .font(SBSFonts.numberUnit())
+                    .foregroundStyle(Color.inkSecondary)
             }
             .padding()
-            .background(SBSColors.surfaceElevatedFallback)
-            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+            .field()
         }
     }
 }
@@ -386,13 +400,12 @@ struct ChoiceChips<Value: Hashable>: View {
                         selection = option
                     } label: {
                         Text(label(option))
-                            .font(SBSFonts.captionBold())
-                            .foregroundStyle(selection == option ? .white : SBSColors.textPrimaryFallback)
+                            .font(SBSFonts.numberSmall())
+                            .foregroundStyle(Color.ink)
                             .frame(minWidth: 32, minHeight: 28)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 8)
-                            .background(selection == option ? SBSColors.accentFallback : SBSColors.surfaceElevatedFallback)
-                            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                            .chipBackground(isSelected: selection == option)
                     }
                     .accessibilityAddTraits(selection == option ? .isSelected : [])
                 }

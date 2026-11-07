@@ -47,7 +47,8 @@ struct MeetPlannerView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: SBSLayout.sectionSpacing) {
+            VStack(spacing: SBSLayout.space6) {
+                ScreenTitle("Meet Planner")
                 inputSection
                 
                 if !plannedLifts.isEmpty {
@@ -60,7 +61,7 @@ struct MeetPlannerView: View {
                 
                 Text("Attempts move in 2.5 kg steps. Plate loads assume a 20 kg bar, 2.5 kg collars and kilo plates, the usual setup at a federation meet. Check your federation's rules.")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal)
                 
@@ -71,16 +72,15 @@ struct MeetPlannerView: View {
         .scrollDismissesKeyboard(.interactively)
         .keyboardDoneToolbar()
         .sbsBackground()
-        .navigationTitle("Meet Planner")
-        .navigationBarTitleDisplayMode(.inline)
+        .screenNavigation("Meet Planner")
         .recordsCalculation(key: plannedLifts.count == 3 ? "\(squatTarget)-\(benchTarget)-\(deadliftTarget)-\(styleRaw)" : nil)
     }
     
     private var inputSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             Text("Third Attempt Goals")
-                .font(SBSFonts.title3())
-                .foregroundStyle(SBSColors.textPrimaryFallback)
+                .font(SBSFonts.heading())
+                .foregroundStyle(Color.ink)
             
             targetField("Squat", text: $squatTarget)
             targetField("Bench", text: $benchTarget)
@@ -102,7 +102,7 @@ struct MeetPlannerView: View {
             }
             .pickerStyle(.segmented)
             
-            Divider()
+            Divider().overlay(Color.hairline)
             
             targetField("Body Weight", text: $bodyWeight)
             
@@ -113,15 +113,15 @@ struct MeetPlannerView: View {
             .pickerStyle(.segmented)
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
     private func targetField(_ label: String, text: Binding<String>) -> some View {
         HStack(spacing: 12) {
             Text(label)
-                .font(SBSFonts.bodyBold())
-                .foregroundStyle(SBSColors.textPrimaryFallback)
+                .font(SBSFonts.bodyStrong())
+                .foregroundStyle(Color.ink)
                 .frame(minWidth: 100, alignment: .leading)
             
             TextField("0", text: text)
@@ -129,23 +129,22 @@ struct MeetPlannerView: View {
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.center)
                 .padding(.vertical, 10)
-                .background(SBSColors.surfaceElevatedFallback)
-                .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                .field()
                 .accessibilityLabel(label)
             
             Text(settings.unitLabel)
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
+                .foregroundStyle(Color.inkSecondary)
         }
     }
     
     private var attemptsSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             ForEach(plannedLifts, id: \.name) { lift in
                 VStack(alignment: .leading, spacing: 8) {
                     Text(lift.name)
-                        .font(SBSFonts.bodyBold())
-                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                        .font(SBSFonts.bodyStrong())
+                        .foregroundStyle(Color.ink)
                     
                     attemptRow("Opener", lift.attempts.opener)
                     attemptRow("Second", lift.attempts.second)
@@ -153,12 +152,12 @@ struct MeetPlannerView: View {
                 }
                 
                 if lift.name != plannedLifts.last?.name {
-                    Divider()
+                    Divider().overlay(Color.hairline)
                 }
             }
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
@@ -167,13 +166,13 @@ struct MeetPlannerView: View {
             HStack {
                 Text(name)
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 
                 Spacer()
                 
                 Text(displayWeight(kilograms))
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
             }
             
             PlateLoadText(result: MeetPlan.calculator.calculate(totalWeight: kilograms))
@@ -194,27 +193,27 @@ struct MeetPlannerView: View {
         ]
         let bodyWeightKg = WeightInput.parse(bodyWeight).map { Units.kilograms($0, isMetric: settings.useMetric) }
         
-        return VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        return VStack(alignment: .leading, spacing: SBSLayout.space4) {
             Text("Projected Totals")
-                .font(SBSFonts.title3())
-                .foregroundStyle(SBSColors.textPrimaryFallback)
+                .font(SBSFonts.heading())
+                .foregroundStyle(Color.ink)
             
             ForEach(totals, id: \.name) { total in
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text(total.name)
                             .font(SBSFonts.body())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                         Spacer()
                         Text(displayWeight(total.kilograms))
-                            .font(SBSFonts.bodyBold())
-                            .foregroundStyle(SBSColors.textPrimaryFallback)
+                            .font(SBSFonts.bodyStrong())
+                            .foregroundStyle(Color.ink)
                     }
                     
                     if let bodyWeightKg {
                         Text(scores(totalKg: total.kilograms, bodyWeightKg: bodyWeightKg))
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                     }
                 }
             }
@@ -222,11 +221,11 @@ struct MeetPlannerView: View {
             if bodyWeightKg == nil {
                 Text("Add your body weight to see projected scores.")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     

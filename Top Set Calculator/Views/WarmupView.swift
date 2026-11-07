@@ -40,14 +40,15 @@ struct WarmupView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: SBSLayout.sectionSpacing) {
+            VStack(spacing: SBSLayout.space6) {
+                ScreenTitle("Warm-ups")
                 inputSection
                 
                 if let top = topSetValue {
                     if sets.isEmpty {
                         Text("Your top set is at or below the empty bar (\(calculator.emptyLoad.weightString()) \(settings.unitLabel)), so there's nothing to ramp through.")
-                            .font(SBSFonts.body())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .font(SBSFonts.number())
+                            .foregroundStyle(Color.inkSecondary)
                             .padding(.horizontal)
                     } else {
                         planSection(top: top)
@@ -61,8 +62,7 @@ struct WarmupView: View {
         .scrollDismissesKeyboard(.interactively)
         .keyboardDoneToolbar()
         .sbsBackground()
-        .navigationTitle("Warm-ups")
-        .navigationBarTitleDisplayMode(.inline)
+        .screenNavigation("Warm-ups")
         .recordsCalculation(key: topSetValue.map { "\($0)-\(lengthRaw)" })
         .onAppear {
             if let initialTopSet, !didApplyInitial {
@@ -73,13 +73,13 @@ struct WarmupView: View {
     }
     
     private var inputSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             WeightField(label: "Top Set Weight", text: $topSet, unit: settings.unitLabel)
             
             VStack(alignment: .leading, spacing: 6) {
                 Text("Warm-up Length")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 
                 Picker("Warm-up Length", selection: $lengthRaw) {
                     ForEach(WarmupPlan.Length.allCases) { length in
@@ -90,11 +90,11 @@ struct WarmupView: View {
             }
             
             Text("Uses your \(settings.barWeight.weightString()) \(settings.unitLabel) bar\(settings.useMyPlates && StoreManager.shared.canAccess(.myPlates) ? " and My Plates" : "").")
-                .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textTertiaryFallback)
+                .font(SBSFonts.numberSmall())
+                .foregroundStyle(Color.inkSecondary)
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
@@ -102,23 +102,23 @@ struct WarmupView: View {
         VStack(spacing: 0) {
             ForEach(sets) { set in
                 row(weight: set.weight, reps: "\(set.reps)", isTopSet: false)
-                Divider()
+                Divider().overlay(Color.hairline)
             }
             row(weight: loadable(top), reps: "Top set", isTopSet: true)
         }
         .padding(.horizontal)
         .padding(.vertical, 4)
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
     private func row(weight: Double, reps: String, isTopSet: Bool) -> some View {
         NavigationLink(value: CalculatorRoute.plate(weight: weight)) {
-            HStack(spacing: SBSLayout.paddingMedium) {
+            HStack(spacing: SBSLayout.space4) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(weight.weightString()) \(settings.unitLabel)")
-                        .font(SBSFonts.bodyBold())
-                        .foregroundStyle(isTopSet ? SBSColors.accentFallback : SBSColors.textPrimaryFallback)
+                        .font(SBSFonts.number())
+                        .foregroundStyle(Color.ink)
                     
                     PlateLoadText(result: calculator.calculate(totalWeight: weight))
                 }
@@ -126,12 +126,12 @@ struct WarmupView: View {
                 Spacer()
                 
                 Text(isTopSet ? reps : "× \(reps)")
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(isTopSet ? SBSColors.accentFallback : SBSColors.textSecondaryFallback)
+                    .font(isTopSet ? SBSFonts.bodyStrong() : SBSFonts.number())
+                    .foregroundStyle(isTopSet ? Color.ink : Color.inkSecondary)
                 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkTertiary)
             }
             .padding(.vertical, 12)
             .contentShape(Rectangle())
