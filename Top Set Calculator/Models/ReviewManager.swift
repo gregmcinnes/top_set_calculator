@@ -26,9 +26,10 @@ enum ReviewManager {
             if let windowScene = UIApplication.shared.connectedScenes
                 .compactMap({ $0 as? UIWindowScene })
                 .first(where: { $0.activationState == .foregroundActive }) {
-                SKStoreReviewController.requestReview(in: windowScene)
+                AppStore.requestReview(in: windowScene)
             }
         }
     }
 }
+
 

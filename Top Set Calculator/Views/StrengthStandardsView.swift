@@ -62,7 +62,8 @@ struct StrengthStandardsView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: SBSLayout.sectionSpacing) {
+            VStack(spacing: SBSLayout.space6) {
+                ScreenTitle("Strength Standards")
                 // Sex selector
                 sexSelector
                 
@@ -84,13 +85,8 @@ struct StrengthStandardsView: View {
                         focusedField = nil
                     } label: {
                         Text("See My Rankings")
-                            .font(SBSFonts.button())
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, SBSLayout.paddingMedium)
-                            .background(SBSColors.accentFallback)
-                            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
                     }
+                    .buttonStyle(SBSPrimaryButtonStyle())
                     .padding(.horizontal)
                 }
                 
@@ -116,8 +112,7 @@ struct StrengthStandardsView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .sbsBackground()
-        .navigationTitle("Strength Standards")
-        .navigationBarTitleDisplayMode(.inline)
+        .screenNavigation("Strength Standards")
         .onChange(of: bodyweight) { _, _ in showResults = false }
         .onChange(of: isMale) { _, _ in showResults = false }
         .onChange(of: ageCategory) { _, _ in showResults = false }
@@ -143,19 +138,8 @@ struct StrengthStandardsView: View {
                 Image(systemName: "square.and.arrow.up")
                 Text("Share My Strength")
             }
-            .font(SBSFonts.button())
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, SBSLayout.paddingMedium)
-            .background(
-                LinearGradient(
-                    colors: [SBSColors.accentFallback, SBSColors.accentSecondaryFallback],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
         }
+        .buttonStyle(SBSSecondaryButtonStyle())
         .padding(.horizontal)
     }
     
@@ -204,18 +188,18 @@ struct StrengthStandardsView: View {
     }
     
     private var sexSelector: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: SBSLayout.space2) {
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isMale = true
                 }
             } label: {
                 Text("Male")
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(isMale ? .white : SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(isMale ? SBSColors.accentFallback : SBSColors.surfaceFallback)
+                    .chipBackground(isSelected: isMale)
             }
             
             Button {
@@ -224,27 +208,26 @@ struct StrengthStandardsView: View {
                 }
             } label: {
                 Text("Female")
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(!isMale ? .white : SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(!isMale ? SBSColors.accentFallback : SBSColors.surfaceFallback)
+                    .chipBackground(isSelected: !isMale)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
         .padding(.horizontal)
     }
     
     private var ageCategorySelector: some View {
-        VStack(spacing: SBSLayout.paddingSmall) {
+        VStack(spacing: SBSLayout.space2) {
             HStack {
                 Text("Age Category")
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                 Spacer()
                 Text("For competitive comparison")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
             
             Menu {
@@ -266,59 +249,57 @@ struct StrengthStandardsView: View {
                 HStack {
                     Text(ageCategory.displayName)
                         .font(SBSFonts.body())
-                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                        .foregroundStyle(Color.ink)
                     
                     Spacer()
                     
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.system(size: 12))
-                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                 }
                 .padding()
-                .background(SBSColors.surfaceFallback)
-                .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+                .card()
             }
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
     private var bodyweightSection: some View {
-        VStack(spacing: SBSLayout.paddingSmall) {
+        VStack(spacing: SBSLayout.space2) {
             HStack {
                 Text("Bodyweight")
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                 Spacer()
             }
             
             HStack {
                 TextField("Enter bodyweight", text: $bodyweight)
-                    .font(SBSFonts.weight())
+                    .font(SBSFonts.numberLarge())
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
                     .focused($focusedField, equals: .bodyweight)
                 
                 Text(unit)
                     .font(SBSFonts.body())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
             .padding()
-            .background(SBSColors.surfaceFallback)
-            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+            .card()
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
     private var liftInputsSection: some View {
-        VStack(spacing: SBSLayout.paddingSmall) {
+        VStack(spacing: SBSLayout.space2) {
             HStack {
                 Text("Your Lifts (1RM or E1RM)")
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                 Spacer()
             }
             
@@ -331,10 +312,10 @@ struct StrengthStandardsView: View {
             
             Text("Leave blank any lifts you don't want to include")
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textTertiaryFallback)
+                .foregroundStyle(Color.inkSecondary)
         }
         .padding()
-        .sbsCard()
+        .card()
         .padding(.horizontal)
     }
     
@@ -342,12 +323,12 @@ struct StrengthStandardsView: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundStyle(SBSColors.accentFallback)
+                .foregroundStyle(Color.orangeText)
                 .frame(width: 24)
             
             Text(title)
                 .font(SBSFonts.body())
-                .foregroundStyle(SBSColors.textPrimaryFallback)
+                .foregroundStyle(Color.ink)
             
             Spacer()
             
@@ -361,13 +342,12 @@ struct StrengthStandardsView: View {
                 
                 Text(unit)
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                     .frame(width: 24)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(SBSColors.surfaceFallback)
-            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall))
+            .card()
         }
     }
     
@@ -378,93 +358,71 @@ struct StrengthStandardsView: View {
         let avgPercentile = percentiles.isEmpty ? 0 : percentiles.reduce(0, +) / Double(percentiles.count)
         let classification = StrengthStandards.classification(for: avgPercentile)
         
-        return VStack(spacing: SBSLayout.paddingMedium) {
+        return VStack(spacing: SBSLayout.space4) {
             // Teaser summary - show classification but hide exact percentile
             VStack(spacing: 8) {
                 Text("Overall Strength")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 
                 // Show classification with mystery percentile
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("??")
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
-                        .foregroundStyle(classification.color)
+                        .font(SBSFonts.timer())
+                        .foregroundStyle(Color.ink)
                         .blur(radius: 8)
                         .overlay(
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 24))
-                                .foregroundStyle(classification.color)
+                                .foregroundStyle(Color.ink)
                         )
                     
                     Text("th percentile")
-                        .font(SBSFonts.title2())
-                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                        .font(SBSFonts.numberUnit())
+                        .foregroundStyle(Color.inkSecondary)
                 }
                 
                 Text(classification.name)
-                    .font(SBSFonts.title3())
+                    .font(SBSFonts.heading())
                     .foregroundStyle(classification.color)
                 
                 Text("Among \(ageCategory == .allAges ? "" : "\(ageCategory.shortName) ")\(isMale ? "male" : "female") lifters")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, SBSLayout.paddingLarge)
-            .background(
-                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                    .fill(classification.color.opacity(0.1))
-            )
+            .padding(.vertical, SBSLayout.space6)
+            .signatureCard()
             
             // Blurred preview of lift cards
             VStack(spacing: 12) {
                 if squatValue != nil {
-                    previewLiftCard(title: "Squat", color: classification.color)
+                    previewLiftCard(title: "Squat")
                 }
                 if benchValue != nil {
-                    previewLiftCard(title: "Bench Press", color: classification.color)
+                    previewLiftCard(title: "Bench Press")
                 }
                 if deadliftValue != nil {
-                    previewLiftCard(title: "Deadlift", color: classification.color)
+                    previewLiftCard(title: "Deadlift")
                 }
                 if ohpValue != nil {
-                    previewLiftCard(title: "Overhead Press", color: classification.color)
+                    previewLiftCard(title: "Overhead Press")
                 }
             }
             
             // Unlock button
-            Button {
-                showingPaywall = true
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 16))
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Unlock Full Results")
-                            .font(SBSFonts.button())
-                        Text("See exact percentiles & compare to 3.5M+ lifters")
-                            .font(.system(size: 11))
-                            .opacity(0.9)
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
+            VStack(spacing: SBSLayout.space2) {
+                Button {
+                    showingPaywall = true
+                } label: {
+                    Text("Unlock Full Results")
                 }
-                .foregroundStyle(.white)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(
-                    LinearGradient(
-                        colors: [SBSColors.accentFallback, SBSColors.accentSecondaryFallback],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+                .buttonStyle(SBSPrimaryButtonStyle())
+
+                Text("See exact percentiles & compare to 3.5M+ lifters")
+                    .font(SBSFonts.caption())
+                    .foregroundStyle(Color.inkSecondary)
+                    .multilineTextAlignment(.center)
             }
             .padding(.top, 8)
         }
@@ -472,44 +430,37 @@ struct StrengthStandardsView: View {
         .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
     
-    private func previewLiftCard(title: String, color: Color) -> some View {
+    private func previewLiftCard(title: String) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                 
                 HStack(spacing: 4) {
                     Text("??th percentile")
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                 }
             }
             
             Spacer()
             
             // Locked indicator
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(color)
-            }
+            Image(systemName: "lock.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.inkSecondary)
+                .frame(width: 44, height: 44)
+                .field()
         }
         .padding()
-        .background(
-            RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                .fill(SBSColors.surfaceFallback)
-        )
+        .card()
     }
     
     // MARK: - Full Results (Premium)
     
     private func resultsSection(bodyweight: Double) -> some View {
-        VStack(spacing: SBSLayout.paddingMedium) {
+        VStack(spacing: SBSLayout.space4) {
             // Overall summary
             overallSummary(bodyweight: bodyweight)
             
@@ -570,21 +521,22 @@ struct StrengthStandardsView: View {
                         .frame(height: 8)
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .clipShape(RoundedRectangle(cornerRadius: SBSLayout.radiusSm))
             
             // Labels
             HStack(spacing: 0) {
                 ForEach(StrengthLevel.allCases) { level in
                     Text(level.shortName)
-                        .font(.system(size: 9, weight: .medium))
+                        .font(SBSFonts.eyebrow())
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
                         .foregroundStyle(level.color)
                         .frame(maxWidth: .infinity)
                 }
             }
         }
         .padding()
-        .background(SBSColors.surfaceFallback)
-        .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+        .card()
     }
     
     private func overallSummary(bodyweight: Double) -> some View {
@@ -595,32 +547,29 @@ struct StrengthStandardsView: View {
         return VStack(spacing: 12) {
             Text("Overall Strength")
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
+                .foregroundStyle(Color.inkSecondary)
             
             VStack(spacing: 8) {
                 Text("\(Int(avgPercentile.rounded()))th")
-                    .font(.system(size: 56, weight: .bold, design: .rounded))
-                    .foregroundStyle(classification.color) +
+                    .font(SBSFonts.timer())
+                    .foregroundStyle(Color.ink) +
                 Text(" percentile")
-                    .font(SBSFonts.title2())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .font(SBSFonts.numberUnit())
+                    .foregroundStyle(Color.inkSecondary)
                 
                 Text(classification.name)
-                    .font(SBSFonts.title3())
+                    .font(SBSFonts.heading())
                     .foregroundStyle(classification.color)
             }
             
             Text("Among \(ageCategory == .allAges ? "" : "\(ageCategory.shortName) ")\(isMale ? "male" : "female") lifters")
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textTertiaryFallback)
+                .foregroundStyle(Color.inkSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, SBSLayout.paddingLarge)
-        .padding(.horizontal, SBSLayout.paddingMedium)
-        .background(
-            RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                .fill(classification.color.opacity(0.1))
-        )
+        .padding(.vertical, SBSLayout.space6)
+        .padding(.horizontal, SBSLayout.space4)
+        .signatureCard()
     }
     
     private func calculateAllPercentiles(bodyweight: Double) -> [Double] {
@@ -665,14 +614,14 @@ struct StrengthStandardsView: View {
             // Header
             HStack {
                 Text(title)
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                 
                 Spacer()
                 
                 Text(formatWeight(weight))
                     .font(SBSFonts.number())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
             
             // Gym Standards visualization - Landmarks view
@@ -680,10 +629,10 @@ struct StrengthStandardsView: View {
                 HStack {
                     Image(systemName: "figure.walk")
                         .font(.system(size: 10))
-                        .foregroundStyle(SBSColors.textTertiaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                     Text("vs Gym Population")
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textTertiaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                     Spacer()
                 }
                 
@@ -691,46 +640,46 @@ struct StrengthStandardsView: View {
                 
                 HStack {
                     Text("\(Int(percentile.rounded()))th percentile")
-                        .font(SBSFonts.captionBold())
+                        .font(SBSFonts.numberSmall())
                         .foregroundStyle(classification.color)
                     
                     Spacer()
                     
                     Text(classification.name)
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textSecondaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                 }
             }
             
             // Competitive lifter visualization
             if let compPercentile = competitivePercentile {
-                Divider()
+                Divider().overlay(Color.hairline)
                     .padding(.vertical, 4)
                 
                 VStack(spacing: 6) {
                     HStack {
                         Image(systemName: "trophy")
                             .font(.system(size: 10))
-                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                         Text("vs Competitive Lifters")
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                         Spacer()
                     }
                     
                     // Simple progress bar for competitive data
-                    progressBarVisualization(percentile: compPercentile, color: .orange)
+                    progressBarVisualization(percentile: compPercentile, color: Color.ink)
                     
                     HStack {
                         Text("\(Int(compPercentile.rounded()))th percentile")
-                            .font(SBSFonts.captionBold())
-                            .foregroundStyle(.orange)
+                            .font(SBSFonts.numberSmall())
+                            .foregroundStyle(Color.ink)
                         
                         Spacer()
                         
                         Text(ageCategory == .allAges ? "OpenPowerlifting data" : "\(ageCategory.displayName)")
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                     }
                 }
             }
@@ -739,18 +688,17 @@ struct StrengthStandardsView: View {
             HStack {
                 Text("Bodyweight multiplier")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 
                 Spacer()
                 
                 Text(String(format: "%.2fx BW", bwMultiplier))
-                    .font(SBSFonts.captionBold())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .eyebrowStyle()
+                    .foregroundStyle(Color.inkSecondary)
             }
         }
         .padding()
-        .background(SBSColors.surfaceFallback)
-        .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+        .card()
     }
     
     // MARK: - Visualization Components
@@ -759,18 +707,12 @@ struct StrengthStandardsView: View {
     private func progressBarVisualization(percentile: Double, color: Color) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(SBSColors.surfaceElevatedFallback)
+                RoundedRectangle(cornerRadius: SBSLayout.radiusSm)
+                    .fill(Color.surfaceRaised)
                     .frame(height: 10)
                 
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(
-                        LinearGradient(
-                            colors: [color.opacity(0.7), color],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                RoundedRectangle(cornerRadius: SBSLayout.radiusSm)
+                    .fill(color)
                     .frame(width: geo.size.width * min(percentile / 100, 1.0), height: 10)
             }
         }
@@ -796,7 +738,7 @@ struct StrengthStandardsView: View {
             ZStack(alignment: .top) {
                 // Track background
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(SBSColors.surfaceElevatedFallback)
+                    .fill(Color.surfaceRaised)
                     .frame(height: 12)
                     .offset(y: 20)
                 
@@ -805,12 +747,13 @@ struct StrengthStandardsView: View {
                     ForEach(StrengthLevel.allCases) { level in
                         let segmentWidth = (level.percentileRange.upperBound - level.percentileRange.lowerBound) / 100
                         Rectangle()
-                            .fill(level.color.opacity(0.6))
+                            .fill(level.color)
+                            .overlay(Rectangle().strokeBorder(Color.surface, lineWidth: SBSLayout.strokeHairline))
                             .frame(width: width * segmentWidth)
                     }
                 }
                 .frame(height: 12)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: SBSLayout.radiusSm))
                 .offset(y: 20)
                 
                 // Landmark markers with weight targets
@@ -820,11 +763,11 @@ struct StrengthStandardsView: View {
                     
                     VStack(spacing: 2) {
                         Text(formatWeightShort(landmarkWeight))
-                            .font(.system(size: 9, weight: .medium, design: .rounded))
+                            .font(SBSFonts.numberTiny())
                             .foregroundStyle(landmark.level.color)
                         
                         Rectangle()
-                            .fill(landmark.level.color.opacity(0.7))
+                            .fill(landmark.level.color)
                             .frame(width: 1, height: 8)
                     }
                     .position(x: xPos, y: 12)
@@ -840,7 +783,7 @@ struct StrengthStandardsView: View {
                         .foregroundStyle(classification.color)
                     
                     Text("YOU")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(SBSFonts.eyebrow())
                         .foregroundStyle(classification.color)
                 }
                 .position(x: userXPos, y: 48)
@@ -867,13 +810,13 @@ struct StrengthStandardsView: View {
     }
     
     private var infoSection: some View {
-        VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
+        VStack(alignment: .leading, spacing: SBSLayout.space4) {
             HStack {
                 Image(systemName: "info.circle.fill")
-                    .foregroundStyle(SBSColors.accentSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 Text("About These Standards")
-                    .font(SBSFonts.captionBold())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .eyebrowStyle()
+                    .foregroundStyle(Color.inkSecondary)
             }
             
             VStack(alignment: .leading, spacing: 12) {
@@ -881,51 +824,50 @@ struct StrengthStandardsView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "figure.walk")
                             .font(.system(size: 12))
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                         Text("Gym Population")
-                            .font(SBSFonts.captionBold())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .eyebrowStyle()
+                            .foregroundStyle(Color.inkSecondary)
                     }
                     Text("Based on estimated distributions of recreational gym-goers who train with weights. A good baseline for general strength.")
                         .font(SBSFonts.caption())
-                        .foregroundStyle(SBSColors.textTertiaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
                         Image(systemName: "trophy")
                             .font(.system(size: 12))
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.inkSecondary)
                         Text("Competitive Lifters")
-                            .font(SBSFonts.captionBold())
-                            .foregroundStyle(SBSColors.textSecondaryFallback)
+                            .eyebrowStyle()
+                            .foregroundStyle(Color.inkSecondary)
                         
                         if !CompetitiveLiftingData.shared.isLoaded {
                             Text("(unavailable)")
                                 .font(SBSFonts.caption())
-                                .foregroundStyle(.red.opacity(0.7))
+                                .foregroundStyle(Color.danger)
                         }
                     }
                     if CompetitiveLiftingData.shared.isLoaded {
                         Text("Based on OpenPowerlifting data from \(CompetitiveLiftingData.shared.lifterCount.formatted()) actual competition results. These lifters are specifically trained for maximum strength, so percentiles here are more competitive.")
                             .font(SBSFonts.caption())
-                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                            .foregroundStyle(Color.inkSecondary)
                     } else {
                         Text("Competitive lifter data could not be loaded. Only gym population data will be shown.")
                             .font(SBSFonts.caption())
-                            .foregroundStyle(.red.opacity(0.7))
+                            .foregroundStyle(Color.danger)
                     }
                 }
             }
             
             Text("Note: OHP is not a competitive powerlifting movement, so only gym population data is shown.")
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.textTertiaryFallback)
+                .foregroundStyle(Color.inkSecondary)
                 .italic()
         }
         .padding()
-        .background(SBSColors.surfaceFallback)
-        .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+        .card()
         .padding(.horizontal)
     }
     
@@ -962,12 +904,12 @@ enum StrengthLevel: String, CaseIterable, Identifiable {
     
     var color: Color {
         switch self {
-        case .beginner: return .gray
-        case .novice: return .blue
-        case .intermediate: return .green
-        case .advanced: return .purple
-        case .elite: return .orange
-        case .worldClass: return .red
+        case .beginner: return Color.inkSecondary
+        case .novice: return Color.inkSecondary
+        case .intermediate: return Color.ink
+        case .advanced: return Color.ink
+        case .elite: return Color.success
+        case .worldClass: return Color.orangeText
         }
     }
     
@@ -995,17 +937,17 @@ enum StrengthStandards {
     static func classification(for percentile: Double) -> Classification {
         switch percentile {
         case 0..<20:
-            return Classification(name: "Beginner", color: .gray)
+            return Classification(name: "Beginner", color: Color.inkSecondary)
         case 20..<40:
-            return Classification(name: "Novice", color: .blue)
+            return Classification(name: "Novice", color: Color.inkSecondary)
         case 40..<60:
-            return Classification(name: "Intermediate", color: .green)
+            return Classification(name: "Intermediate", color: Color.ink)
         case 60..<80:
-            return Classification(name: "Advanced", color: .purple)
+            return Classification(name: "Advanced", color: Color.ink)
         case 80..<95:
-            return Classification(name: "Elite", color: .orange)
+            return Classification(name: "Elite", color: Color.success)
         default:
-            return Classification(name: "World Class", color: .red)
+            return Classification(name: "World Class", color: Color.orangeText)
         }
     }
     

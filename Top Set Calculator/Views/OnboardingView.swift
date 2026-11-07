@@ -12,7 +12,7 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             // Background
-            SBSColors.backgroundFallback
+            Color.bg
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
@@ -34,19 +34,19 @@ struct OnboardingView: View {
                 .animation(.easeInOut(duration: 0.3), value: currentPage)
                 
                 // Bottom section
-                VStack(spacing: SBSLayout.paddingLarge) {
+                VStack(spacing: SBSLayout.space6) {
                     // Page indicators
                     HStack(spacing: 8) {
                         ForEach(0..<totalPages, id: \.self) { index in
-                            Circle()
-                                .fill(index == currentPage ? SBSColors.accentFallback : SBSColors.textTertiaryFallback.opacity(0.5))
-                                .frame(width: index == currentPage ? 10 : 8, height: index == currentPage ? 10 : 8)
+                            Rectangle()
+                                .fill(index == currentPage ? Color.orangeFill : Color.hairline)
+                                .frame(width: 10, height: 10)
                                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentPage)
                         }
                     }
                     
                     // Navigation buttons
-                    HStack(spacing: SBSLayout.paddingMedium) {
+                    HStack(spacing: SBSLayout.space4) {
                         if currentPage > 0 {
                             Button {
                                 withAnimation {
@@ -54,11 +54,8 @@ struct OnboardingView: View {
                                 }
                             } label: {
                                 Text("Back")
-                                    .font(SBSFonts.button())
-                                    .foregroundStyle(SBSColors.textSecondaryFallback)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, SBSLayout.paddingMedium)
                             }
+                            .buttonStyle(SBSSecondaryButtonStyle())
                         }
                         
                         Button {
@@ -71,17 +68,12 @@ struct OnboardingView: View {
                             }
                         } label: {
                             Text(currentPage == totalPages - 1 ? "Get Started" : "Next")
-                                .font(SBSFonts.button())
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, SBSLayout.paddingMedium)
-                                .background(SBSColors.accentFallback)
-                                .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
                         }
+                        .buttonStyle(SBSPrimaryButtonStyle())
                     }
-                    .padding(.horizontal, SBSLayout.paddingLarge)
+                    .padding(.horizontal, SBSLayout.space6)
                 }
-                .padding(.bottom, SBSLayout.paddingXLarge)
+                .padding(.bottom, SBSLayout.space8)
             }
         }
         .preferredColorScheme(settings.appearanceMode.colorScheme)
@@ -97,48 +89,38 @@ struct OnboardingView: View {
 
 private struct WelcomePage: View {
     var body: some View {
-        VStack(spacing: SBSLayout.sectionSpacing) {
+        VStack(spacing: SBSLayout.space6) {
             Spacer()
             
-            // App icon
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [SBSColors.accentFallback, SBSColors.accentSecondaryFallback],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 120, height: 120)
-                    .shadow(color: SBSColors.accentFallback.opacity(0.4), radius: 20, x: 0, y: 10)
-                
-                Image(systemName: "scalemass.fill")
-                    .font(.system(size: 50, weight: .medium))
-                    .foregroundStyle(.white)
-            }
-            .padding(.bottom, SBSLayout.paddingMedium)
+            // The mark
+            Image("TopSetMark")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 120)
+                .accessibilityHidden(true)
+                .padding(.bottom, SBSLayout.space4)
             
-            VStack(spacing: SBSLayout.paddingSmall) {
+            VStack(spacing: SBSLayout.space2) {
                 Text("Welcome to")
-                    .font(SBSFonts.title2())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .font(SBSFonts.heading())
+                    .foregroundStyle(Color.inkSecondary)
                 
                 Text("Top Set Calculator")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .titleLargeStyle()
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Color.ink)
             }
             
             Text("Your complete toolkit for\nstrength training calculations")
                 .font(SBSFonts.body())
-                .foregroundStyle(SBSColors.textSecondaryFallback)
+                .foregroundStyle(Color.inkSecondary)
                 .multilineTextAlignment(.center)
-                .padding(.top, SBSLayout.paddingSmall)
+                .padding(.top, SBSLayout.space2)
             
             Spacer()
             Spacer()
         }
-        .padding(.horizontal, SBSLayout.paddingLarge)
+        .padding(.horizontal, SBSLayout.space6)
     }
 }
 
@@ -146,98 +128,87 @@ private struct WelcomePage: View {
 
 private struct CalculatorsPage: View {
     var body: some View {
-        VStack(spacing: SBSLayout.sectionSpacing) {
+        VStack(spacing: SBSLayout.space6) {
             Spacer()
             
-            VStack(spacing: SBSLayout.paddingSmall) {
+            VStack(spacing: SBSLayout.space2) {
                 Text("Powerful Calculators")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.title())
+                    .foregroundStyle(Color.ink)
                 
                 Text("Everything you need to optimize your training")
                     .font(SBSFonts.body())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                     .multilineTextAlignment(.center)
             }
             
-            VStack(spacing: SBSLayout.paddingMedium) {
+            VStack(spacing: SBSLayout.space4) {
                 CalculatorFeatureRow(
                     icon: "trophy.fill",
-                    iconColor: .orange,
                     title: "One-Rep Max",
                     description: "Estimate your 1RM using 6 proven formulas"
                 )
                 
                 CalculatorFeatureRow(
                     icon: "gauge.with.needle.fill",
-                    iconColor: .purple,
                     title: "RPE Calculator",
                     description: "Find target weights for any RPE level"
                 )
                 
                 CalculatorFeatureRow(
                     icon: "circle.grid.2x1.fill",
-                    iconColor: .blue,
                     title: "Plate Calculator",
                     description: "Visualize exactly which plates to load"
                 )
                 
                 CalculatorFeatureRow(
                     icon: "percent",
-                    iconColor: .green,
                     title: "Training Max",
                     description: "Calculate TM for percentage-based programs"
                 )
                 
                 CalculatorFeatureRow(
                     icon: "scalemass.fill",
-                    iconColor: .mint,
                     title: "Strength Scores",
                     description: "Wilks, DOTS & IPF GL points"
                 )
             }
-            .padding(.horizontal, SBSLayout.paddingMedium)
+            .padding(.horizontal, SBSLayout.space4)
             
             Spacer()
             Spacer()
         }
-        .padding(.horizontal, SBSLayout.paddingLarge)
+        .padding(.horizontal, SBSLayout.space6)
     }
 }
 
 private struct CalculatorFeatureRow: View {
     let icon: String
-    let iconColor: Color
     let title: String
     let description: String
     
     var body: some View {
-        HStack(spacing: SBSLayout.paddingMedium) {
-            ZStack {
-                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusSmall)
-                    .fill(iconColor.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(iconColor)
-            }
+        HStack(spacing: SBSLayout.space4) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Color.ink)
+                .frame(width: 44, height: 44)
+                .field()
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                 
                 Text(description)
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
             
             Spacer()
         }
         .padding()
-        .background(SBSColors.surfaceFallback)
-        .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+        .card()
     }
 }
 
@@ -245,43 +216,42 @@ private struct CalculatorFeatureRow: View {
 
 private struct FeaturesPage: View {
     var body: some View {
-        VStack(spacing: SBSLayout.sectionSpacing) {
+        VStack(spacing: SBSLayout.space6) {
             Spacer()
             
-            VStack(spacing: SBSLayout.paddingSmall) {
+            VStack(spacing: SBSLayout.space2) {
                 Text("Customize Your Setup")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.title())
+                    .foregroundStyle(Color.ink)
                 
                 Text("Tailor the app to match your equipment")
                     .font(SBSFonts.body())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                     .multilineTextAlignment(.center)
             }
             
-            VStack(spacing: SBSLayout.paddingLarge) {
+            VStack(spacing: SBSLayout.space6) {
                 FeatureCard(
                     icon: "slider.horizontal.3",
                     title: "Units & Bar Weight",
-                    description: "Switch between pounds and kilograms. Set your default barbell weight.",
-                    color: .blue
+                    description: "Switch between pounds and kilograms. Set your default barbell weight."
                 )
                 
                 FeatureCard(
                     icon: "paintpalette.fill",
                     title: "Custom Plate Colors",
                     description: "Personalize the barbell visualization to match your gym's plates.",
-                    color: .pink
+                    isPremium: true
                 )
                 
                 FeatureCard(
                     icon: "tray.full.fill",
                     title: "My Plates",
                     description: "Tell the calculator which plates you own for accurate load-outs.",
-                    color: .orange
+                    isPremium: true
                 )
             }
-            .padding(.horizontal, SBSLayout.paddingMedium)
+            .padding(.horizontal, SBSLayout.space4)
             
             HStack(spacing: 6) {
                 Image(systemName: "gearshape")
@@ -289,13 +259,18 @@ private struct FeaturesPage: View {
                 Text("Access settings from the gear icon")
                     .font(SBSFonts.caption())
             }
-            .foregroundStyle(SBSColors.textTertiaryFallback)
-            .padding(.top, SBSLayout.paddingSmall)
+            .foregroundStyle(Color.inkSecondary)
+            .padding(.top, SBSLayout.space2)
+            
+            Text("PRO features, including warm-ups and My Lifts, are part of a one-time Premium unlock.")
+                .font(SBSFonts.caption())
+                .foregroundStyle(Color.inkSecondary)
+                .multilineTextAlignment(.center)
             
             Spacer()
             Spacer()
         }
-        .padding(.horizontal, SBSLayout.paddingLarge)
+        .padding(.horizontal, SBSLayout.space6)
     }
 }
 
@@ -303,36 +278,37 @@ private struct FeatureCard: View {
     let icon: String
     let title: String
     let description: String
-    let color: Color
+    var isPremium = false
     
     var body: some View {
-        HStack(spacing: SBSLayout.paddingMedium) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.15))
-                    .frame(width: 50, height: 50)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(color)
-            }
+        HStack(spacing: SBSLayout.space4) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.ink)
+                .frame(width: 44, height: 44)
+                .field()
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                HStack(spacing: 6) {
+                    Text(title)
+                        .font(SBSFonts.bodyStrong())
+                        .foregroundStyle(Color.ink)
+                    
+                    if isPremium {
+                        PremiumBadge()
+                    }
+                }
                 
                 Text(description)
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             
             Spacer()
         }
         .padding()
-        .background(SBSColors.surfaceFallback)
-        .clipShape(RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium))
+        .card()
     }
 }
 
@@ -342,27 +318,27 @@ private struct MoreAppsPage: View {
     let onGetStarted: () -> Void
     
     var body: some View {
-        VStack(spacing: SBSLayout.sectionSpacing) {
+        VStack(spacing: SBSLayout.space6) {
             Spacer()
             
-            VStack(spacing: SBSLayout.paddingSmall) {
+            VStack(spacing: SBSLayout.space2) {
                 HStack(spacing: 8) {
                     Image(systemName: "square.stack.3d.up.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(SBSColors.accentFallback)
-                    
+                        .foregroundStyle(Color.ink)
+
                     Text("The Top Set Suite")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(SBSColors.textPrimaryFallback)
+                        .font(SBSFonts.title())
+                        .foregroundStyle(Color.ink)
                 }
                 
                 Text("Level up your training with our other apps")
                     .font(SBSFonts.body())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                     .multilineTextAlignment(.center)
             }
             
-            VStack(spacing: SBSLayout.paddingMedium) {
+            VStack(spacing: SBSLayout.space4) {
                 // Top Set Training
                 OnboardingAppCard(
                     iconName: "TopSetTrainingIcon",
@@ -379,17 +355,17 @@ private struct MoreAppsPage: View {
                     url: "https://apps.apple.com/us/app/top-set-timer/id6756226855"
                 )
             }
-            .padding(.horizontal, SBSLayout.paddingMedium)
+            .padding(.horizontal, SBSLayout.space4)
             
             Text("You're all set!")
-                .font(SBSFonts.title3())
-                .foregroundStyle(SBSColors.textPrimaryFallback)
-                .padding(.top, SBSLayout.paddingLarge)
+                .font(SBSFonts.heading())
+                .foregroundStyle(Color.ink)
+                .padding(.top, SBSLayout.space6)
             
             Spacer()
             Spacer()
         }
-        .padding(.horizontal, SBSLayout.paddingLarge)
+        .padding(.horizontal, SBSLayout.space6)
     }
 }
 
@@ -401,25 +377,24 @@ private struct OnboardingAppCard: View {
     
     var body: some View {
         Link(destination: URL(string: url)!) {
-            VStack(alignment: .leading, spacing: SBSLayout.paddingMedium) {
-                HStack(spacing: SBSLayout.paddingMedium) {
+            VStack(alignment: .leading, spacing: SBSLayout.space4) {
+                HStack(spacing: SBSLayout.space4) {
                     // App Icon
                     Image(iconName)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 64, height: 64)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                     
                     // App Info
                     VStack(alignment: .leading, spacing: 4) {
                         Text(appName)
-                            .font(SBSFonts.title3())
-                            .foregroundStyle(SBSColors.textPrimaryFallback)
+                            .font(SBSFonts.heading())
+                            .foregroundStyle(Color.ink)
                         
                         Text("Health & Fitness")
-                            .font(.system(size: 12))
-                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                            .font(SBSFonts.caption())
+                            .foregroundStyle(Color.inkSecondary)
                     }
                     
                     Spacer()
@@ -427,25 +402,18 @@ private struct OnboardingAppCard: View {
                     // External link indicator
                     Image(systemName: "arrow.up.forward")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(SBSColors.textTertiaryFallback)
+                        .foregroundStyle(Color.inkSecondary)
                 }
                 
                 Text(description)
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                    .fill(SBSColors.surfaceFallback)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                    .stroke(SBSColors.textTertiaryFallback.opacity(0.2), lineWidth: 1)
-            )
+            .card()
         }
     }
 }

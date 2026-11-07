@@ -10,29 +10,25 @@ struct PaywallView: View {
     let storeManager = StoreManager.shared
     
     @State private var isPurchasing = false
-    @State private var showError = false
-    @State private var errorMessage = ""
+    @State private var showAlert = false
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
     @State private var animateIn = false
     
     /// Optional: The specific feature that triggered this paywall
     var triggeredByFeature: PremiumFeature?
     
+    /// Sheets opened from anywhere in the app should match the chosen appearance
+    @AppStorage("appearanceMode") private var appearanceRawValue = AppearanceMode.system.rawValue
+    
     var body: some View {
         ZStack {
             // Background
-            LinearGradient(
-                colors: [
-                    SBSColors.backgroundFallback,
-                    SBSColors.backgroundFallback,
-                    SBSColors.accentFallback.opacity(0.08)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            Color.bg
             .ignoresSafeArea()
             
             ScrollView {
-                VStack(spacing: SBSLayout.paddingLarge) {
+                VStack(spacing: SBSLayout.space6) {
                     // Header
                     headerSection
                         .opacity(animateIn ? 1 : 0)
@@ -64,19 +60,32 @@ struct PaywallView: View {
                     Button {
                         dismiss()
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundStyle(SBSColors.textTertiaryFallback)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Color.ink)
                             .padding()
                     }
+                    .accessibilityLabel("Close")
                 }
                 Spacer()
             }
         }
-        .alert("Error", isPresented: $showError) {
+        .preferredColorScheme(AppearanceMode(rawValue: appearanceRawValue)?.colorScheme)
+        .alert(alertTitle, isPresented: $showAlert) {
             Button("OK") { }
         } message: {
-            Text(errorMessage)
+            Text(alertMessage)
+        }
+        .task {
+            // Launch may have happened offline, so try again for a real price
+            if storeManager.premiumProduct == nil {
+                await storeManager.loadProducts()
+            }
+        }
+        .onChange(of: storeManager.isPremium) { _, isPremium in
+            if isPremium {
+                dismiss()
+            }
         }
         .onAppear {
             withAnimation(.easeOut(duration: 0.5)) {
@@ -88,59 +97,38 @@ struct PaywallView: View {
     // MARK: - Header Section
     
     private var headerSection: some View {
-        VStack(spacing: SBSLayout.paddingMedium) {
-            // Crown icon
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                SBSColors.accentFallback.opacity(0.2),
-                                SBSColors.accentFallback.opacity(0.05)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 100, height: 100)
-                
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 44))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [SBSColors.accentFallback, SBSColors.accentSecondaryFallback],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            }
+        VStack(spacing: SBSLayout.space4) {
+            Image("TopSetMark")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 72)
+                .accessibilityHidden(true)
             
-            VStack(spacing: SBSLayout.paddingSmall) {
+            VStack(spacing: SBSLayout.space2) {
                 Text("Unlock Premium")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .titleLargeStyle()
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Color.ink)
                 
                 Text("Get the most out of your training")
                     .font(SBSFonts.body())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                     .multilineTextAlignment(.center)
             }
             
             // If triggered by a specific feature, highlight it
             if let feature = triggeredByFeature {
-                HStack(spacing: SBSLayout.paddingSmall) {
+                HStack(spacing: SBSLayout.space2) {
                     Image(systemName: feature.iconName)
                         .font(.system(size: 14))
                     Text(feature.displayName)
-                        .font(SBSFonts.captionBold())
+                        .font(SBSFonts.caption())
                 }
-                .foregroundStyle(SBSColors.accentFallback)
-                .padding(.horizontal, SBSLayout.paddingMedium)
-                .padding(.vertical, SBSLayout.paddingSmall)
-                .background(
-                    Capsule()
-                        .fill(SBSColors.accentFallback.opacity(0.12))
-                )
+                .foregroundStyle(Color.ink)
+                .padding(.horizontal, SBSLayout.space4)
+                .padding(.vertical, SBSLayout.space2)
+                .background(Color.orangeSoft)
+                .clipShape(RoundedRectangle(cornerRadius: SBSLayout.radiusSm))
             }
         }
         .padding(.top, 60)
@@ -149,42 +137,39 @@ struct PaywallView: View {
     // MARK: - Features Section
     
     private var featuresSection: some View {
-        VStack(spacing: SBSLayout.paddingMedium) {
+        VStack(spacing: SBSLayout.space4) {
             Text("What's Included")
-                .font(SBSFonts.title3())
-                .foregroundStyle(SBSColors.textPrimaryFallback)
+                .font(SBSFonts.heading())
+                .foregroundStyle(Color.ink)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            VStack(spacing: SBSLayout.paddingSmall) {
+            VStack(spacing: SBSLayout.space2) {
                 ForEach(PremiumFeature.allCases, id: \.rawValue) { feature in
                     PremiumFeatureRow(feature: feature)
                 }
             }
         }
         .padding()
-        .background(
-            RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusMedium)
-                .fill(SBSColors.surfaceFallback)
-        )
+        .card()
     }
     
     // MARK: - Purchase Section
     
     private var purchaseSection: some View {
-        VStack(spacing: SBSLayout.paddingMedium) {
+        VStack(spacing: SBSLayout.space4) {
             // Price badge
             VStack(spacing: 4) {
                 Text("One-Time Purchase")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textTertiaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
                 
                 Text(storeManager.premiumPriceString)
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.numberLarge())
+                    .foregroundStyle(Color.ink)
                 
-                Text("Unlock forever • No subscription")
+                Text("Unlock forever · No subscription")
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
+                    .foregroundStyle(Color.inkSecondary)
             }
             
             // Purchase button
@@ -193,30 +178,17 @@ struct PaywallView: View {
                     await purchasePremium()
                 }
             } label: {
-                HStack(spacing: SBSLayout.paddingSmall) {
+                HStack(spacing: SBSLayout.space2) {
                     if isPurchasing {
                         ProgressView()
-                            .tint(.white)
+                            .tint(Color.orangeInk)
                     } else {
-                        Image(systemName: "crown.fill")
                         Text("Upgrade Now")
                     }
                 }
-                .font(SBSFonts.button())
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, SBSLayout.paddingMedium + 4)
-                .background(
-                    RoundedRectangle(cornerRadius: SBSLayout.cornerRadiusLarge)
-                        .fill(
-                            LinearGradient(
-                                colors: [SBSColors.accentFallback, SBSColors.accentSecondaryFallback],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                )
+                
             }
+            .buttonStyle(SBSPrimaryButtonStyle())
             .disabled(isPurchasing)
         }
     }
@@ -231,40 +203,61 @@ struct PaywallView: View {
         } label: {
             Text("Restore Purchases")
                 .font(SBSFonts.caption())
-                .foregroundStyle(SBSColors.accentFallback)
+                .foregroundStyle(Color.orangeText)
         }
-        .padding(.top, SBSLayout.paddingSmall)
+        .disabled(isPurchasing)
+        .padding(.top, SBSLayout.space2)
     }
     
     // MARK: - Actions
     
     private func purchasePremium() async {
         isPurchasing = true
+        defer { isPurchasing = false }
         
         do {
-            let transaction = try await storeManager.purchasePremium()
-            isPurchasing = false
-            
-            if transaction != nil {
-                // Purchase successful - dismiss
+            switch try await storeManager.purchasePremium() {
+            case .purchased:
                 dismiss()
+            case .pending:
+                presentAlert(
+                    title: "Purchase Pending",
+                    message: "Your purchase is waiting for approval. Premium will unlock automatically once it's approved."
+                )
+            case .cancelled:
+                break
             }
-            // If nil, user cancelled - stay on paywall
         } catch {
-            isPurchasing = false
-            errorMessage = error.localizedDescription
-            showError = true
+            presentAlert(title: "Purchase Failed", message: error.localizedDescription)
         }
     }
     
     private func restorePurchases() async {
         isPurchasing = true
-        await storeManager.restorePurchases()
-        isPurchasing = false
+        defer { isPurchasing = false }
         
-        if storeManager.isPremium {
-            dismiss()
+        do {
+            try await storeManager.restorePurchases()
+            
+            if storeManager.isPremium {
+                dismiss()
+            } else {
+                presentAlert(
+                    title: "No Purchases Found",
+                    message: "We couldn't find a previous Premium purchase for this Apple Account."
+                )
+            }
+        } catch StoreKitError.userCancelled {
+            // The user backed out of signing in
+        } catch {
+            presentAlert(title: "Restore Failed", message: error.localizedDescription)
         }
+    }
+    
+    private func presentAlert(title: String, message: String) {
+        alertTitle = title
+        alertMessage = message
+        showAlert = true
     }
 }
 
@@ -274,28 +267,24 @@ private struct PremiumFeatureRow: View {
     let feature: PremiumFeature
     
     var body: some View {
-        HStack(spacing: SBSLayout.paddingMedium) {
+        HStack(spacing: SBSLayout.space4) {
             // Icon
-            ZStack {
-                Circle()
-                    .fill(SBSColors.accentFallback.opacity(0.1))
-                    .frame(width: 36, height: 36)
-                
-                Image(systemName: feature.iconName)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(SBSColors.accentFallback)
-            }
+            Image(systemName: feature.iconName)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.ink)
+                .frame(width: 36, height: 36)
+                .field()
             
             // Text
             VStack(alignment: .leading, spacing: 2) {
                 Text(feature.displayName)
-                    .font(SBSFonts.bodyBold())
-                    .foregroundStyle(SBSColors.textPrimaryFallback)
+                    .font(SBSFonts.bodyStrong())
+                    .foregroundStyle(Color.ink)
                 
                 Text(feature.featureDescription)
                     .font(SBSFonts.caption())
-                    .foregroundStyle(SBSColors.textSecondaryFallback)
-                    .lineLimit(2)
+                    .foregroundStyle(Color.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             
             Spacer()
@@ -303,9 +292,9 @@ private struct PremiumFeatureRow: View {
             // Checkmark
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 20))
-                .foregroundStyle(SBSColors.success)
+                .foregroundStyle(Color.success)
         }
-        .padding(.vertical, SBSLayout.paddingSmall)
+        .padding(.vertical, SBSLayout.space2)
     }
 }
 
@@ -316,6 +305,6 @@ private struct PremiumFeatureRow: View {
 }
 
 #Preview("Triggered by Feature") {
-    PaywallView(triggeredByFeature: .customPlateColors)
+    PaywallView(triggeredByFeature: .warmups)
 }
 
